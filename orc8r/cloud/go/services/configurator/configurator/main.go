@@ -19,6 +19,9 @@ and meta data for the network and network entity structures.
 package main
 
 import (
+	"context"
+	"log"
+
 	"github.com/golang/glog"
 
 	"magma/orc8r/cloud/go/orc8r"
@@ -30,6 +33,7 @@ import (
 	"magma/orc8r/cloud/go/services/configurator/storage"
 	"magma/orc8r/cloud/go/sqorc"
 	storage2 "magma/orc8r/cloud/go/storage"
+	"magma/orc8r/cloud/go/tracing"
 )
 
 const (
@@ -37,6 +41,13 @@ const (
 )
 
 func main() {
+	tp := tracing.Init("configurator")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	// Create the service
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, configurator.ServiceName)
 	if err != nil {

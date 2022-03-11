@@ -18,6 +18,7 @@ import (
 	"flag"
 	"math/rand"
 	"time"
+	"log"
 
 	"github.com/golang/glog"
 
@@ -41,6 +42,7 @@ import (
 	"magma/orc8r/lib/go/protos"
 	"magma/orc8r/lib/go/security/cert"
 	"magma/orc8r/lib/go/service/config"
+	"magma/orc8r/cloud/go/tracing"
 )
 
 var (
@@ -54,6 +56,13 @@ var (
 )
 
 func main() {
+	tp := tracing.Init("certifier")
+    defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+    }()
+
 	// Create the service, flag will be parsed inside this function
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, certifier.ServiceName)
 	if err != nil {

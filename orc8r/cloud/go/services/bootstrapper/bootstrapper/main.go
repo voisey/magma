@@ -20,6 +20,8 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+	"log"
+    "context"
 
 	"github.com/golang/glog"
 
@@ -34,6 +36,7 @@ import (
 	storage2 "magma/orc8r/cloud/go/storage"
 	"magma/orc8r/lib/go/protos"
 	"magma/orc8r/lib/go/security/key"
+	"magma/orc8r/cloud/go/tracing"
 )
 
 var (
@@ -42,6 +45,13 @@ var (
 )
 
 func main() {
+	tp := tracing.Init("bootstrapper")
+    defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+    }()
+
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, bootstrapper.ServiceName)
 	if err != nil {
 		glog.Fatalf("error creating service: %+v", err)

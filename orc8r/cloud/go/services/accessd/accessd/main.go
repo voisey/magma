@@ -16,6 +16,9 @@ limitations under the License.
 package main
 
 import (
+	"log"
+    "context"
+
 	"github.com/golang/glog"
 
 	"magma/orc8r/cloud/go/blobstore"
@@ -27,9 +30,17 @@ import (
 	"magma/orc8r/cloud/go/services/accessd/storage"
 	"magma/orc8r/cloud/go/sqorc"
 	storage2 "magma/orc8r/cloud/go/storage"
+	"magma/orc8r/cloud/go/tracing"
 )
 
 func main() {
+	tp := tracing.Init("accessd")
+    defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+    }()
+
 	// Create the service
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, accessd.ServiceName)
 	if err != nil {

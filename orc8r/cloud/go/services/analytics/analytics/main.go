@@ -14,14 +14,25 @@
 package main
 
 import (
+	"log"
+    "context"
+
 	"github.com/golang/glog"
 
 	"magma/orc8r/cloud/go/orc8r"
 	"magma/orc8r/cloud/go/service"
 	"magma/orc8r/cloud/go/services/analytics"
+	"magma/orc8r/cloud/go/tracing"
 )
 
 func main() {
+	tp := tracing.Init("analytics")
+    defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+    }()
+
 	// Create the service
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, analytics.ServiceName)
 	if err != nil {
