@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
@@ -107,7 +108,11 @@ func NewServiceWithOptionsImpl(moduleName string, serviceName string, serverOpti
 
 	// Use keepalive options to proactively reinit http2 connections and
 	// mitigate flow control issues
-	opts := []grpc.ServerOption{grpc.KeepaliveParams(defaultKeepaliveParams)}
+	opts := []grpc.ServerOption{
+		grpc.KeepaliveParams(defaultKeepaliveParams),
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+	}
 	opts = append(opts, serverOptions...) // keepalive is prepended so serverOptions can override if requested
 
 	grpcServer := grpc.NewServer(opts...)
