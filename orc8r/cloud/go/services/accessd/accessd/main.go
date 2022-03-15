@@ -16,8 +16,8 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"log"
-    "context"
 
 	"github.com/golang/glog"
 
@@ -35,11 +35,11 @@ import (
 
 func main() {
 	tp := tracing.Init("accessd")
-    defer func() {
+	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
 			log.Printf("Error shutting down tracer provider: %v", err)
 		}
-    }()
+	}()
 
 	// Create the service
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, accessd.ServiceName)

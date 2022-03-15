@@ -14,8 +14,8 @@ limitations under the License.
 package main
 
 import (
-    "log"
-    "context"
+	"context"
+	"log"
 
 	"github.com/golang/glog"
 
@@ -23,17 +23,17 @@ import (
 	"magma/orc8r/cloud/go/service"
 	"magma/orc8r/cloud/go/services/streamer"
 	streamer_servicers "magma/orc8r/cloud/go/services/streamer/servicers/southbound"
-	"magma/orc8r/lib/go/protos"
 	"magma/orc8r/cloud/go/tracing"
+	"magma/orc8r/lib/go/protos"
 )
 
 func main() {
-    tp := tracing.Init("streamer")
-    defer func() {
+	tp := tracing.Init("streamer")
+	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
 			log.Printf("Error shutting down tracer provider: %v", err)
 		}
-    }()
+	}()
 
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, streamer.ServiceName)
 	if err != nil {

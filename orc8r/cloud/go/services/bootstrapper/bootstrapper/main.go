@@ -14,14 +14,14 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"errors"
 	"flag"
 	"io/ioutil"
+	"log"
 	"os"
 	"time"
-	"log"
-    "context"
 
 	"github.com/golang/glog"
 
@@ -34,9 +34,9 @@ import (
 	bootstrapper_servicer "magma/orc8r/cloud/go/services/bootstrapper/servicers/southbound"
 	"magma/orc8r/cloud/go/sqorc"
 	storage2 "magma/orc8r/cloud/go/storage"
+	"magma/orc8r/cloud/go/tracing"
 	"magma/orc8r/lib/go/protos"
 	"magma/orc8r/lib/go/security/key"
-	"magma/orc8r/cloud/go/tracing"
 )
 
 var (
@@ -46,11 +46,11 @@ var (
 
 func main() {
 	tp := tracing.Init("bootstrapper")
-    defer func() {
+	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
 			log.Printf("Error shutting down tracer provider: %v", err)
 		}
-    }()
+	}()
 
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, bootstrapper.ServiceName)
 	if err != nil {
