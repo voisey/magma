@@ -23,7 +23,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
 	"magma/orc8r/lib/go/protos"
@@ -448,7 +450,9 @@ func (r *ServiceRegistry) getGRPCDialOptions() []grpc.DialOption {
 	if r.serviceRegistryMode == K8sRegistryMode || r.serviceRegistryMode == DockerRegistryMode {
 		timeoutInterceptor = CloudClientTimeoutInterceptor
 	}
-	opts = append(opts, grpc.WithUnaryInterceptor(timeoutInterceptor))
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	opts = append(opts, grpc.WithChainUnaryInterceptor(timeoutInterceptor, otelgrpc.UnaryClientInterceptor()))
+	opts = append(opts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	opts = append(opts, r.additionalOpts...)
 	return opts
 }
