@@ -14,6 +14,8 @@
 package main
 
 import (
+	"context"
+	"log"
 	"os"
 
 	"github.com/docker/docker/client"
@@ -24,6 +26,7 @@ import (
 	"magma/orc8r/cloud/go/orc8r"
 	"magma/orc8r/cloud/go/service"
 	servicers "magma/orc8r/cloud/go/services/service_registry/servicers/protected"
+	"magma/orc8r/cloud/go/tracing"
 	"magma/orc8r/lib/go/protos"
 	"magma/orc8r/lib/go/registry"
 )
@@ -36,6 +39,13 @@ const (
 )
 
 func main() {
+	tp := tracing.Init("service_registry")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, registry.ServiceRegistryServiceName)
 	if err != nil {
 		glog.Fatalf("Error creating service registry service %s", err)

@@ -14,6 +14,9 @@
 package main
 
 import (
+	"context"
+	"log"
+
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
 
@@ -34,6 +37,7 @@ import (
 	protected_servicers "magma/orc8r/cloud/go/services/orchestrator/servicers/protected"
 	indexer_protos "magma/orc8r/cloud/go/services/state/protos"
 	streamer_protos "magma/orc8r/cloud/go/services/streamer/protos"
+	"magma/orc8r/cloud/go/tracing"
 	"magma/orc8r/lib/go/service/config"
 )
 
@@ -43,6 +47,13 @@ const (
 )
 
 func main() {
+	tp := tracing.Init("orchestrator")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	srv, err := service.NewOrchestratorService(
 		orc8r.ModuleName,
 		orchestrator.ServiceName,

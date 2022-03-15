@@ -16,6 +16,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 
 	"github.com/golang/glog"
@@ -32,6 +33,7 @@ import (
 	indexermgr_servicers "magma/orc8r/cloud/go/services/state/servicers/protected"
 	"magma/orc8r/cloud/go/sqorc"
 	"magma/orc8r/cloud/go/storage"
+	"magma/orc8r/cloud/go/tracing"
 	"magma/orc8r/lib/go/protos"
 	"magma/orc8r/lib/go/service/config"
 )
@@ -56,6 +58,13 @@ provide directions in the upgrade notes.
 `
 
 func main() {
+	tp := tracing.Init("state")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, state.ServiceName)
 	if err != nil {
 		glog.Fatalf("Error creating state service %v", err)

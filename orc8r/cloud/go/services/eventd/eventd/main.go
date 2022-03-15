@@ -14,6 +14,9 @@ limitations under the License.
 package main
 
 import (
+	"context"
+	"log"
+
 	"github.com/golang/glog"
 
 	"magma/orc8r/cloud/go/obsidian"
@@ -23,9 +26,17 @@ import (
 	"magma/orc8r/cloud/go/service"
 	"magma/orc8r/cloud/go/services/eventd"
 	"magma/orc8r/cloud/go/services/eventd/obsidian/handlers"
+	"magma/orc8r/cloud/go/tracing"
 )
 
 func main() {
+	tp := tracing.Init("eventd")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, eventd.ServiceName)
 	if err != nil {
 		glog.Fatalf("Error creating service: %+v", err)

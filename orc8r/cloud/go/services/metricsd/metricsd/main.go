@@ -14,6 +14,8 @@ limitations under the License.
 package main
 
 import (
+	"context"
+	"log"
 	"time"
 
 	"github.com/golang/glog"
@@ -29,6 +31,7 @@ import (
 	"magma/orc8r/cloud/go/services/metricsd/collection"
 	"magma/orc8r/cloud/go/services/metricsd/obsidian/handlers"
 	"magma/orc8r/cloud/go/services/metricsd/servicers"
+	"magma/orc8r/cloud/go/tracing"
 	"magma/orc8r/lib/go/protos"
 )
 
@@ -39,6 +42,13 @@ const (
 )
 
 func main() {
+	tp := tracing.Init("metricsd")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName,
 		metricsd.ServiceName,
 		grpc.MaxRecvMsgSize(CloudMetricsCollectMaxMsgSize))

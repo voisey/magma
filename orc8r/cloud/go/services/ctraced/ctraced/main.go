@@ -14,6 +14,9 @@ limitations under the License.
 package main
 
 import (
+	"context"
+	"log"
+
 	"github.com/golang/glog"
 
 	"magma/orc8r/cloud/go/blobstore"
@@ -28,10 +31,18 @@ import (
 	ctraced_storage "magma/orc8r/cloud/go/services/ctraced/storage"
 	"magma/orc8r/cloud/go/sqorc"
 	"magma/orc8r/cloud/go/storage"
+	"magma/orc8r/cloud/go/tracing"
 	"magma/orc8r/lib/go/protos"
 )
 
 func main() {
+	tp := tracing.Init("ctraced")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	// Create service
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, ctraced.ServiceName)
 	if err != nil {

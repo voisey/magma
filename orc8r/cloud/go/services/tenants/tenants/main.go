@@ -14,6 +14,9 @@
 package main
 
 import (
+	"context"
+	"log"
+
 	"github.com/golang/glog"
 
 	"magma/orc8r/cloud/go/blobstore"
@@ -29,9 +32,17 @@ import (
 	"magma/orc8r/cloud/go/services/tenants/servicers/storage"
 	"magma/orc8r/cloud/go/sqorc"
 	storage2 "magma/orc8r/cloud/go/storage"
+	"magma/orc8r/cloud/go/tracing"
 )
 
 func main() {
+	tp := tracing.Init("tenants")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, tenants.ServiceName)
 	if err != nil {
 		glog.Fatalf("Error creating tenants service %s", err)

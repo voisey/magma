@@ -14,7 +14,9 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
 
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
@@ -25,6 +27,7 @@ import (
 	syncRpcBroker "magma/orc8r/cloud/go/services/dispatcher/broker"
 	"magma/orc8r/cloud/go/services/dispatcher/httpserver"
 	"magma/orc8r/cloud/go/services/dispatcher/servicers"
+	"magma/orc8r/cloud/go/tracing"
 	"magma/orc8r/lib/go/protos"
 	platform_service "magma/orc8r/lib/go/service"
 )
@@ -38,6 +41,13 @@ func main() {
 	var keepaliveParams = platform_service.GetDefaultKeepaliveParameters()
 	keepaliveParams.MaxConnectionAge = 0
 	keepaliveParams.MaxConnectionAgeGrace = 0
+
+	tp := tracing.Init("dispatcher")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
 
 	// Create the service
 	srv, err := service.NewOrchestratorService(

@@ -16,6 +16,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	"github.com/golang/glog"
 
@@ -30,10 +31,18 @@ import (
 	servicers "magma/orc8r/cloud/go/services/state/servicers/protected"
 	"magma/orc8r/cloud/go/sqorc"
 	"magma/orc8r/cloud/go/storage"
+	"magma/orc8r/cloud/go/tracing"
 	"magma/orc8r/lib/go/service/config"
 )
 
 func main() {
+	tp := tracing.Init("orc8r_worker")
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	srv, err := service.NewOrchestratorService(orc8r.ModuleName, orc8r_worker.ServiceName)
 	if err != nil {
 		glog.Fatalf("Error creating orc8r_worker service %v", err)
