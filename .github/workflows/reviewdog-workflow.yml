@@ -153,6 +153,7 @@ jobs:
           filter_mode: added
           reporter: github-pr-review
           fail_on_error: false
+          markdownlint_flags: "--config $MAGMA_ROOT/docs/readmes/.markdownlint.yaml"
 
   misspell:
     name: misspell
