@@ -2,7 +2,7 @@
 name: reviewdog-workflow
 on:  # yamllint disable-line rule:truthy
   push:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - reopened
@@ -152,7 +152,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           filter_mode: added
-          reporter: github-pr-review
+          reporter: github-check
           fail_on_error: false
           markdownlint_flags: "--config $MAGMA_ROOT/docs/readmes/.markdownlint.yaml"
 
