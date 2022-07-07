@@ -49,7 +49,7 @@ installation process to get an IP using DHCP.
 
 ### 2. Deploy magma on the AGW_HOST
 
-#### Run AGW installation
+  #### Run AGW installation
 
 To install on a server with a DHCP-configured SGi interface
 
