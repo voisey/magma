@@ -1,7 +1,7 @@
 ---
 name: reviewdog-workflow
 on:
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - reopened
@@ -149,10 +149,9 @@ jobs:
         uses: reviewdog/action-markdownlint@v0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          filter_mode: added
+          filter_mode: diff_context
           reporter: github-pr-review
-          fail_on_error: false
-          markdownlint_flags: "--config ./docs/readmes/.markdownlint.yaml"
+          markdownlint_flags: "--config $MAGMA_ROOT/docs/readmes/.markdownlint.yaml"
 
   misspell:
     name: misspell
