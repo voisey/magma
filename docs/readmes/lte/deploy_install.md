@@ -16,9 +16,9 @@ satisfies the following requirements:
 - AGW_HOST: 64bit-X86 machine, baremetal strongly recommended
   (not virtualized). You will need two ethernet ports. In this guide,
   `enp1s0` and `enp2s0` are used:
-    - `enp1s0`: Will carry any traffic that is not S1. That is, data plane traffic (SGi),
+  - `enp1s0`: Will carry any traffic that is not S1. That is, data plane traffic (SGi),
     control plane traffic (Orc8r HTTP2) and management (ssh).
-    - `enp2s0`: S1 interface.
+  - `enp2s0`: S1 interface.
 
 > NOTE:
 >
