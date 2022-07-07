@@ -31,4 +31,4 @@ jobs:
         uses: reviewdog/action-markdownlint@v0
         with:
           fail_on_error: true
-          markdownlint_flags: "--config $MAGMA_ROOT/docs/readmes/.markdownlint.yaml"
+          markdownlint_flags: "--config ./docs/readmes/.markdownlint.yaml"
