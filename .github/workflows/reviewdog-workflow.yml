@@ -30,5 +30,6 @@ jobs:
       - name: markdownlint
         uses: reviewdog/action-markdownlint@v0
         with:
+          filter_mode: added
           fail_on_error: true
           markdownlint_flags: "--config ./docs/readmes/.markdownlint.yaml"
