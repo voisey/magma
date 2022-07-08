@@ -149,9 +149,9 @@ jobs:
         uses: reviewdog/action-markdownlint@v0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          filter_mode: diff_context
+          filter_mode: added
           reporter: github-pr-review
-          # markdownlint_flags: "--config $MAGMA_ROOT/docs/readmes/.markdownlint.yaml"
+          markdownlint_flags: "--config ./docs/readmes/.markdownlint.yaml ."
 
   misspell:
     name: misspell
