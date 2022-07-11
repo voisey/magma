@@ -717,7 +717,6 @@ def get_ovsdb_port_tag(port_name: str) -> Optional[str]:
             return tokens[1]
         except ValueError:
             pass
-    return None
 
 
 def get_iface_ipv4(iface: str) -> List[str]:

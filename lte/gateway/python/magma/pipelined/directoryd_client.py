@@ -69,7 +69,7 @@ def get_record(imsi: str, field: str) -> Optional[str]:
         )
     except ValueError:
         logging.error('Cant get RPC channel to %s', DIRECTORYD_SERVICE_NAME)
-        return None
+        return
     client = GatewayDirectoryServiceStub(chan)
     if not imsi.startswith("IMSI"):
         imsi = "IMSI" + imsi
