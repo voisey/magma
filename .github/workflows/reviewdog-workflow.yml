@@ -174,6 +174,7 @@ jobs:
           exclude: |
             nms/yarn.lock
 
+  # Config read from magma/mypy.ini
   mypy:
     needs: files_changed
     if: ${{ needs.files_changed.outputs.changed_python == 'true' }}
@@ -192,6 +193,7 @@ jobs:
           github_token: ${{ secrets.github_token }}
           filter_mode: added
           reporter: github-pr-review
+          target: "./lte/gateway/python/"
 
   shellcheck:
     name: shellcheck
