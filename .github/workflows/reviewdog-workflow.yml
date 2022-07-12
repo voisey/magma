@@ -188,7 +188,7 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
       - name: Run mypy with reviewdog
-        uses: voisey/action-mypy
+        uses: voisey/action-mypy@master
         with:
           github_token: ${{ secrets.github_token }}
           filter_mode: added
