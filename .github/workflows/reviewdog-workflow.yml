@@ -194,6 +194,7 @@ jobs:
           filter_mode: added
           reporter: github-pr-review
           level: warning
+          mypy_flags: "--verbose"
 
   shellcheck:
     name: shellcheck
