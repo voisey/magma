@@ -193,8 +193,7 @@ jobs:
           github_token: ${{ secrets.github_token }}
           filter_mode: nofilter
           reporter: github-pr-review
-          level: warning
-          mypy_flags: "--verbose"
+          mypy_flags: "--verbose --show-error-codes"
 
   shellcheck:
     name: shellcheck
