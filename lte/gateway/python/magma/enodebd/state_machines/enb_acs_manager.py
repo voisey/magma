@@ -39,7 +39,7 @@ class StateMachineManager:
         service: MagmaService,
     ):
         self._ip_serial_mapping = IpToSerialMapping()
-        self._service = service
+        self._service = None
         self._state_machine_by_ip = {}
 
     def handle_tr069_message(
