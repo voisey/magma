@@ -191,7 +191,7 @@ jobs:
         uses: voisey/action-mypy@master
         with:
           github_token: ${{ secrets.github_token }}
-          filter_mode: added
+          filter_mode: nofilter
           reporter: github-pr-review
           level: warning
           mypy_flags: "--verbose"
