@@ -50,7 +50,6 @@ if [ "$MAGMA_INSTALLED" != "$SUCCESS_MESSAGE" ]; then
   echo "Cleanup temp files"
   cd /root || exit
   rm -rf $AGW_INSTALL_CONFIG
-  rm -rf /home/$MAGMA_USER/build
   rm -f $DEPLOY_PATH/agw_hosts
 
 else
