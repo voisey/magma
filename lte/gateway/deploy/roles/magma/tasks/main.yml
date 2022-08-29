@@ -324,7 +324,9 @@
   when: full_provision
 
 - name: Delete the OVS bridge on system initialization
-  lineinfile: dest=/etc/default/openvswitch-switch regexp='.*OVS_CTL_OPTS=.*' line='OVS_CTL_OPTS=\'--delete-bridges\'' state=present
+  state:
+    path: "/etc/default/openvswitch-switch"
+    lineinfile: dest=/etc/default/openvswitch-switch regexp='.*OVS_CTL_OPTS=.*' line='OVS_CTL_OPTS=\'--delete-bridges\'' state=present
   when: full_provision
 
 - name: Specific Magma dependencies from backports
