@@ -89,6 +89,14 @@
     state: link
     force: yes
 
+- name: Create the .cache/test_certs directory if doesn't exist
+  file: path='/home/vagrant/magma/.cache/test_certs' state=directory
+
+- name: Generate the cloud VM's certs if they are not already generated
+  command: '/home/vagrant/magma/orc8r/tools/ansible/roles/gateway_dev/files/create_rootca /home/vagrant/magma/.cache/test_certs'
+  args:
+    creates: '/home/vagrant/magma/.cache/test_certs/rootCA.pem'
+
 - name: Create test certificates directory
   file:
     path: /var/opt/magma/certs/
@@ -103,17 +111,52 @@
   with_items:
     - .key
     - .pem
-    - .srl
+
+
+- name: Ansible check /home/vagrant/magma/lte/gateway/configs/pipelined.yml exists
+  stat:
+    path: "/home/vagrant/magma/lte/gateway/configs/pipelined.yml"
+  register: p
+- debug:
+    msg: "File exists... "  
+  when: p.stat.exists
+- debug:
+    msg: "File not found"
+  when: p.stat.exists == False
+
+- name: Check /etc/magma/ exists
+  stat:
+    path: "/etc/magma/"
+  register: p
+- debug:
+    msg: "File exists... "  
+  when: p.stat.exists
+- debug:
+    msg: "File not found"
+  when: p.stat.exists == False
+
+- name: Check directory /etc/magma/
+  stat:
+    path: /etc/magma/
+  register: _folder 
+
+- name: Create /etc/magma/
+  file:
+    path: /etc/magma/
+    state: directory
+    mode: 0755
+  when: _folder.stat.exists == false
 
 - name: Override pipelined and sessiond production configuration
-  file:
-    src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
-    dest: "/etc/magma/{{ item }}"
-    state: link
-    force: yes
-  loop:
-    - pipelined.yml
-    - sessiond.yml
+  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/pipelined.yml" "/etc/magma/"
+  # file:
+  #   src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
+  #   dest: "/etc/magma/{{ item }}"
+  #   state: link
+  #   force: yes
+  # loop:
+  #   - {pipelined.yml}
+  #   - {sessiond.yml}
 
 - name: Ensure changes in repository are used in services
   file:
