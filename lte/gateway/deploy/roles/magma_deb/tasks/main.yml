@@ -135,20 +135,20 @@
     msg: "File not found"
   when: p.stat.exists == False
 
-- name: Check directory /etc/magma/
+- name: Check directory /etc/magma
   stat:
-    path: /etc/magma/
+    path: /etc/magma
   register: _folder 
 
-- name: Create /etc/magma/
+- name: Create /etc/magma
   file:
-    path: /etc/magma/
+    path: /etc/magma
     state: directory
     mode: 0755
   when: _folder.stat.exists == false
 
 - name: Override pipelined and sessiond production configuration
-  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/pipelined.yml" "/etc/magma/"
+  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/pipelined.yml" "/etc/magma/pipelined.yml"
   # file:
   #   src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
   #   dest: "/etc/magma/{{ item }}"
@@ -158,18 +158,24 @@
   #   - {pipelined.yml}
   #   - {sessiond.yml}
 
-- name: Ensure changes in repository are used in services
-  file:
-    src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
-    dest: "/etc/magma/{{ item }}"
-    state: link
-    force: yes
-  loop:
-    - templates/mme.conf.template
-    - gateway.mconfig
+- name: sessiond
+  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/sessiond.yml" "/etc/magma/sessiond.yml"
 
-- name: Clear existing service files
-  shell: rm -f /etc/systemd/system/magma*
+# - name: Ensure changes in repository are used in services
+#   file:
+#     src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
+#     dest: "/etc/magma/{{ item }}"
+#     state: link
+#     force: yes
+#   loop:
+#     - templates/mme.conf.template
+#     - gateway.mconfig
+
+- name: mme config
+  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/templates/mme.conf.template" "/etc/magma/mme.conf.template"
+
+- name: gateway config
+  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/gateway.mconfig" "/etc/magma/gateway.mconfig"
 
 - name: Override production service configurations with test configurations
   copy:
