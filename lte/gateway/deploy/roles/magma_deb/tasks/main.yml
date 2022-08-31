@@ -112,9 +112,9 @@
     - .key
     - .pem
 
-- name: Create /etc/magma
+- name: Create /etc/magma/templates
   file:
-    path: /etc/magma
+    path: /etc/magma/templates
     state: directory
     mode: 0755
 
