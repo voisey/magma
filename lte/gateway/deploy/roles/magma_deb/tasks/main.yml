@@ -112,70 +112,17 @@
     - .key
     - .pem
 
-
-- name: Ansible check /home/vagrant/magma/lte/gateway/configs/pipelined.yml exists
-  stat:
-    path: "/home/vagrant/magma/lte/gateway/configs/pipelined.yml"
-  register: p
-- debug:
-    msg: "File exists... "  
-  when: p.stat.exists
-- debug:
-    msg: "File not found"
-  when: p.stat.exists == False
-
-- name: Check /etc/magma/ exists
-  stat:
-    path: "/etc/magma/"
-  register: p
-- debug:
-    msg: "File exists... "  
-  when: p.stat.exists
-- debug:
-    msg: "File not found"
-  when: p.stat.exists == False
-
-- name: Check directory /etc/magma
-  stat:
-    path: /etc/magma
-  register: _folder 
-
-- name: Create /etc/magma
-  file:
-    path: /etc/magma
-    state: directory
-    mode: 0755
-  when: _folder.stat.exists == false
-
 - name: Override pipelined and sessiond production configuration
-  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/pipelined.yml" "/etc/magma/pipelined.yml"
-  # file:
-  #   src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
-  #   dest: "/etc/magma/{{ item }}"
-  #   state: link
-  #   force: yes
-  # loop:
-  #   - {pipelined.yml}
-  #   - {sessiond.yml}
+  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/{{ item }}" "/etc/magma/{{ item }}"
+  loop:
+    - pipelined.yml
+    - sessiond.yml
 
-- name: sessiond
-  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/sessiond.yml" "/etc/magma/sessiond.yml"
-
-# - name: Ensure changes in repository are used in services
-#   file:
-#     src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
-#     dest: "/etc/magma/{{ item }}"
-#     state: link
-#     force: yes
-#   loop:
-#     - templates/mme.conf.template
-#     - gateway.mconfig
-
-- name: mme config
-  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/templates/mme.conf.template" "/etc/magma/mme.conf.template"
-
-- name: gateway config
-  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/gateway.mconfig" "/etc/magma/gateway.mconfig"
+- name: Ensure changes in repository are used in services
+  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/{{ item }}" "/etc/magma/{{ item }}"
+  loop:
+    - templates/mme.conf.template
+    - gateway.mconfig
 
 - name: Override production service configurations with test configurations
   copy:
