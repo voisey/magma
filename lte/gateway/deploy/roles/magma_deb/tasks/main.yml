@@ -112,6 +112,12 @@
     - .key
     - .pem
 
+- name: Create /etc/magma
+  file:
+    path: /etc/magma
+    state: directory
+    mode: 0755
+
 - name: Override pipelined and sessiond production configuration
   shell: ln -s "/home/vagrant/magma/lte/gateway/configs/{{ item }}" "/etc/magma/{{ item }}"
   loop:
