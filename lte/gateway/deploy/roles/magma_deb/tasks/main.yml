@@ -150,15 +150,15 @@
   when: _folder.stat.exists == false
 
 - name: Override pipelined and sessiond production configuration
-  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/{{ item }}" "/etc/magma/{{ item }}"
-  # file:
-  #   src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
-  #   dest: "/etc/magma/{{ item }}"
-  #   state: link
-  #   force: yes
+  #shell: ln -s "/home/vagrant/magma/lte/gateway/configs/{{ item }}" "/etc/magma/{{ item }}"
+  file:
+     src: '/home/vagrant/magma/lte/gateway/configs/{{ item }}'
+     dest: '/etc/magma/{{ item }}'
+     state: link
+     force: yes
   loop:
-    - {pipelined.yml}
-    - {sessiond.yml}
+    - pipelined.yml
+    - sessiond.yml
 
 - name: Ensure changes in repository are used in services
   file:
