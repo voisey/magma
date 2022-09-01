@@ -112,20 +112,22 @@
     - .key
     - .pem
 
-- name: Create /etc/magma/templates
-  file:
-    path: /etc/magma/templates
-    state: directory
-    mode: 0755
-
 - name: Override pipelined and sessiond production configuration
-  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/{{ item }}" "/etc/magma/{{ item }}"
+  file:
+    src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
+    dest: "/etc/magma/{{ item }}"
+    state: link
+    force: yes
   loop:
     - pipelined.yml
     - sessiond.yml
 
 - name: Ensure changes in repository are used in services
-  shell: ln -s "/home/vagrant/magma/lte/gateway/configs/{{ item }}" "/etc/magma/{{ item }}"
+  file:
+    src: "/home/vagrant/magma/lte/gateway/configs/{{ item }}"
+    dest: "/etc/magma/{{ item }}"
+    state: link
+    force: yes
   loop:
     - templates/mme.conf.template
     - gateway.mconfig
