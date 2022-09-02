@@ -229,6 +229,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                               ["--timeout=30"]
       ansible.verbose = 'v'
     end
+
+    magma_deb.vm.provision :reload
+
   end
 
 end
