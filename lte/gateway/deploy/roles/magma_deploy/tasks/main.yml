@@ -146,8 +146,12 @@
 - name: Installing magma.
   become: true
   apt:
-    name: magma=1.8.0-1661673761-145dfbe2
+    name: "{{ packages }}"
     dpkg_options: 'force-confold,force-confdef,force-overwrite'
+  vars:
+    packages:
+      - magma
+
 
 # Install openvswitch in containerized agw only
 - name: Install prebuilt openvswitch packages
