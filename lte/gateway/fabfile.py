@@ -48,7 +48,6 @@ in `release/magma.lockfile`
     fab dev package upload_to_aws
 """
 
-GATEWAY_IP_ADDRESS = "192.168.60.142"
 AGW_ROOT = "$MAGMA_ROOT/lte/gateway"
 AGW_PYTHON_ROOT = "$MAGMA_ROOT/lte/gateway/python"
 FEG_INTEG_TEST_ROOT = AGW_PYTHON_ROOT + "/integ_tests/federated_tests"
@@ -401,22 +400,14 @@ def bazel_integ_test_post_build(
 
 
 def _setup_vm(host, name, ansible_role, ansible_file, destroy_vm, provision_vm):
-    ip = None
     if not host:
         host = vagrant_setup(
             name, destroy_vm, force_provision=provision_vm,
         )
     else:
         ansible_setup(host, ansible_role, ansible_file)
-        ip = host.split('@')[1].split(':')[0]
+    ip = host.split('@')[1].split(':')[0]
     return host, ip
-
-
-def _setup_gateway(gateway_host, name, ansible_role, ansible_file, destroy_vm, provision_vm):
-    gateway_host, gateway_ip = _setup_vm(gateway_host, name, ansible_role, ansible_file, destroy_vm, provision_vm)
-    if gateway_ip == None:
-        gateway_ip = GATEWAY_IP_ADDRESS
-    return gateway_host, gateway_ip
 
 
 def integ_test(
@@ -446,7 +437,7 @@ def integ_test(
 
     # Setup the gateway: use the provided gateway if given, else default to the
     # vagrant machine
-    gateway_host, gateway_ip = _setup_gateway(gateway_host, "magma", "dev", "magma_dev.yml", destroy_vm, provision_vm)
+    gateway_host, gateway_ip = _setup_vm(gateway_host, "magma", "dev", "magma_dev.yml", destroy_vm, provision_vm)
     execute(_dist_upgrade)
     execute(_build_magma)
     execute(_run_sudo_python_unit_tests)
@@ -496,8 +487,8 @@ def integ_test_deb_installation(
 
     # Set up the gateway: use the provided gateway if given, else default to the
     # vagrant machine
-    _, gateway_ip = _setup_gateway(gateway_host, "magma_deb", "deb", "magma_deb.yml", destroy_vm, provision_vm)
-    execute(_restart_gateway)
+    _, gateway_ip = _setup_vm(gateway_host, "magma_deb", "deb", "magma_deb.yml", destroy_vm, provision_vm)
+    execute(_start_gateway)
 
     # Set up the trfserver: use the provided trfserver if given, else default to the
     # vagrant machine
