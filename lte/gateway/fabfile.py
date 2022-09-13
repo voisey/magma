@@ -488,7 +488,7 @@ def integ_test_deb_installation(
     # Set up the gateway: use the provided gateway if given, else default to the
     # vagrant machine
     _, gateway_ip = _setup_vm(gateway_host, "magma_deb", "deb", "magma_deb.yml", destroy_vm, provision_vm)
-    execute(_start_gateway)
+    execute(_restart_gateway)
 
     # Set up the trfserver: use the provided trfserver if given, else default to the
     # vagrant machine
@@ -779,6 +779,11 @@ def _run_sudo_python_unit_tests():
 def _start_gateway():
     """ Starts the gateway """
     run('sudo service magma@magmad start')
+
+
+def _restart_gateway():
+    """ Restarts the gateway """
+    run('sudo service magma@* stop && sudo service magma@magmad start')
 
 
 def _set_service_config_var(service, var_name, value):
