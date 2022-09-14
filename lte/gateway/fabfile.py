@@ -400,13 +400,20 @@ def bazel_integ_test_post_build(
 
 
 def _setup_vm(host, name, ansible_role, ansible_file, destroy_vm, provision_vm):
+
+    ip = None
+
+    if name in ("magma", "magma_deb"):
+        ip = "192.168.60.142"
+
     if not host:
         host = vagrant_setup(
             name, destroy_vm, force_provision=provision_vm,
         )
     else:
         ansible_setup(host, ansible_role, ansible_file)
-    ip = host.split('@')[1].split(':')[0]
+        ip = host.split('@')[1].split(':')[0]
+
     return host, ip
 
 
@@ -488,7 +495,7 @@ def integ_test_deb_installation(
     # Set up the gateway: use the provided gateway if given, else default to the
     # vagrant machine
     _, gateway_ip = _setup_vm(gateway_host, "magma_deb", "deb", "magma_deb.yml", destroy_vm, provision_vm)
-    execute(_restart_gateway)
+    execute(_start_gateway)
 
     # Set up the trfserver: use the provided trfserver if given, else default to the
     # vagrant machine
@@ -779,11 +786,6 @@ def _run_sudo_python_unit_tests():
 def _start_gateway():
     """ Starts the gateway """
     run('sudo service magma@magmad start')
-
-
-def _restart_gateway():
-    """ Restarts the gateway """
-    run('sudo service magma@* stop && sudo service magma@magmad start')
 
 
 def _set_service_config_var(service, var_name, value):
