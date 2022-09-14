@@ -18,6 +18,7 @@ on:
       - build-all
     branches:
       - master
+      - 'v1.*'
     types:
       - completed
 
