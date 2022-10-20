@@ -9,7 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: LTE integ test containerized AGW
+name: LTE Integ Tests - Make Containerized Build
 
 on:
   workflow_dispatch: null

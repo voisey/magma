@@ -9,13 +9,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Update PR on check failure
+name: Comment on PR on Workflow Failure
 on:
   workflow_run:
     workflows:
-      - DCO check
+      - DCO Check
       - Python Format Check
-      - Markdown lint check
+      - Markdown Lint Check
     types:
       - completed
 
@@ -101,9 +101,9 @@ jobs:
             fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
       - run: unzip pr.zip
       - name: DCO comment message
-        if: ${{ github.event.workflow.name == 'DCO check' }}
+        if: ${{ github.event.workflow.name == 'DCO Check' }}
         run: |
-          echo "Oops! Looks like you failed the \`DCO check\`. Be sure to sign all your commits.
+          echo "Oops! Looks like you failed the \`DCO Check\`. Be sure to sign all your commits.
           ### Howto
           - [Magma guidelines on signing commits](https://magma.github.io/magma/docs/next/contributing/contribute_workflow#guidelines)
           - [About the \`signoff\` feature](https://stackoverflow.com/questions/1962094/what-is-the-sign-off-feature-in-git-for)
@@ -126,9 +126,9 @@ jobs:
           - For PRs with only one commit, the commit message must also be semantic. See [Changing a commit message](https://docs.github.com/en/github/committing-changes-to-your-project/creating-and-editing-commits/changing-a-commit-message) for a howto
           - $CHECK_GUIDELINE" >> $GITHUB_WORKSPACE/msg
       - name: Markdown lint comment message
-        if: ${{ github.event.workflow.name == 'Markdown lint check' }}
+        if: ${{ github.event.workflow.name == 'Markdown Lint Check' }}
         run: |
-          echo "Oops! Looks like you failed the \`Markdown lint check\`.
+          echo "Oops! Looks like you failed the \`Markdown Lint Check\`.
           ### Howto
           - [Instructions on formatting your Markdown changes](https://github.com/magma/magma/wiki/Contributing-Documentation#precommit)
           - $CHECK_GUIDELINE" >> $GITHUB_WORKSPACE/msg

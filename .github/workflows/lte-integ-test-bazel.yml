@@ -9,7 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: LTE integ test bazel
+name: LTE Integ Tests - Bazel Dev Build
 
 on:
   workflow_dispatch: null

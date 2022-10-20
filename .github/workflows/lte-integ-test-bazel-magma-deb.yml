@@ -9,7 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: LTE integ test bazel magma-deb
+name: LTE Integ Tests - Bazel Debian Build
 
 on:
   workflow_dispatch: null
