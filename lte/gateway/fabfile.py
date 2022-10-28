@@ -553,7 +553,7 @@ def get_test_summaries(
         dst_path="/tmp",
         integration_tests='True',
         sudo_tests='True',
-        dev_vm_name="magma",
+        dev_vm_name="magma"
 ):
     local('mkdir -p ' + dst_path)
 
