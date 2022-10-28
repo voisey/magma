@@ -13,9 +13,9 @@ name: PR Generate Comment On Workflow Failure
 on:
   workflow_run:
     workflows:
-      - PR Check DCO
-      - AGW Build & Format Python
-      - Docs Lint & Check Generated Files In Sync
+      - dco-check
+      - python-workflow
+      - docs-workflow
     types:
       - completed
 
@@ -103,7 +103,7 @@ jobs:
       - name: DCO comment message
         if: ${{ github.event.workflow.name == 'PR Check DCO' }}
         run: |
-          echo "Oops! Looks like you failed the \`PR Check DCO\`. Be sure to sign all your commits.
+          echo "Oops! Looks like you failed the \`TEST PR Check DCO\`. Be sure to sign all your commits.
           ### Howto
           - [Magma guidelines on signing commits](https://magma.github.io/magma/docs/next/contributing/contribute_workflow#guidelines)
           - [About the \`signoff\` feature](https://stackoverflow.com/questions/1962094/what-is-the-sign-off-feature-in-git-for)
@@ -113,7 +113,7 @@ jobs:
       - name: Python format comment message
         if: ${{ github.event.workflow.name == 'AGW Build & Format Python' }}
         run: |
-          echo "Oops! Looks like you failed the \`AGW Build & Format Python\`.
+          echo "Oops! Looks like you failed the \`TEST AGW Build & Format Python\`.
           ### Howto
           - Instructions on running the formatter and linter locally are provided in the [format AGW doc](https://docs.magmacore.org/docs/next/lte/dev_unit_testing#format-agw)
           - $CHECK_GUIDELINE" >> $GITHUB_WORKSPACE/msg
@@ -128,7 +128,7 @@ jobs:
       - name: Markdown lint comment message
         if: ${{ github.event.workflow.name == 'Docs Lint & Check Generated Files In Sync' }}
         run: |
-          echo "Oops! Looks like you failed the \`Docs Lint & Check Generated Files In Sync\`.
+          echo "Oops! Looks like you failed the \`TEST Docs Lint & Check Generated Files In Sync\`.
           ### Howto
           - [Instructions on formatting your Markdown changes](https://github.com/magma/magma/wiki/Contributing-Documentation#precommit)
           - $CHECK_GUIDELINE" >> $GITHUB_WORKSPACE/msg
