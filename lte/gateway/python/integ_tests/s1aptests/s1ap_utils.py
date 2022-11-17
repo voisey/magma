@@ -1020,11 +1020,17 @@ class MagmadUtil(object):
         self.exec_command(MAGTIVATE_CMD + " && " + state_corrupt_cmd)
         print(f"Corrupted {key} on redis")
 
+    def restart_sctpd(self):
+        self.exec_command(
+            "sudo systemctl restart sctpd"
+        )
+        time.sleep(30)
+
     def restart_all_services(self):
         """Restart all magma services on magma_dev VM"""
         if self._init_system == InitMode.SYSTEMD:
             self.exec_command(
-                "sudo systemctl stop 'magma@*' 'sctpd' ;"
+                "sudo systemctl stop 'magma@*' ;"
                 "sudo systemctl start magma@magmad",
             )
             self._wait_for_pipelined_to_initialize()
@@ -1664,6 +1670,7 @@ class MagmadUtil(object):
         with open(mconfig_conf, "w") as json_file:
             json.dump(data, json_file, sort_keys=True, indent=2)
 
+        self.restart_sctpd()
         self.restart_all_services()
 
     def _validate_non_nat_datapath(self, ip_version: int = 4):
