@@ -13,6 +13,8 @@ name: Magma Publish Go Package
 
 on:
   workflow_dispatch:
+    branches:
+      - master
     inputs:
       version:
         description: Version to upload?
