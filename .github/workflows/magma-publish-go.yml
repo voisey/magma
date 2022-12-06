@@ -33,7 +33,7 @@ jobs:
       - name: Set up JFrog CLI
         id: jfrog-setup
         # Workaround because secrets are available in `env` but not in `if`
-        if: ${{ env.JF_USER != '' && env.JF_PASSWORD != '' }}
+        # if: ${{ env.JF_USER != '' && env.JF_PASSWORD != '' }}
         uses: jfrog/setup-jfrog-cli@d0a59b1cdaeeb16e65b5039fc92b8507337f1559 # pin@v3
         env:
           JF_URL: https://linuxfoundation.jfrog.io/
@@ -41,7 +41,7 @@ jobs:
           JF_PASSWORD: ${{ secrets.LF_JFROG_PASSWORD }}
 
       - name: Publish Go package
-        if: steps.jfrog-setup.conclusion == 'success'
+        # if: steps.jfrog-setup.conclusion == 'success'
         run: |
           jf rt upload \
             --recursive=false \
