@@ -83,6 +83,7 @@ func (m *mockConfigProvider) setConfig(cfg Config) Config {
 }
 
 func TestPostODS(t *testing.T) {
+	t.Skip()
 
 	tests := []struct {
 		testName    string
