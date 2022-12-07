@@ -36,6 +36,7 @@ func TestBasicInsertGetRedis(t *testing.T) {
 }
 
 func TestMultipleConcurrentInsertDeleteGetRedis(t *testing.T) {
+	t.Skip()
 	// Arrange
 	degOfParallelism := 100
 	reqPerConcurrentContext := 100

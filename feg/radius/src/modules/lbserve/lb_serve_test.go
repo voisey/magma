@@ -90,6 +90,7 @@ func TestLBServeFailsWithNoUpstreamHost(t *testing.T) {
 }
 
 func TestLBServeProxiesRequestToRadiusAndReturnsResponse(t *testing.T) {
+	t.Skip()
 	// Arrange
 	var sessionID = "sessionID"
 
@@ -155,6 +156,7 @@ func spawnRadiusServer() (server *radius.PacketServer, port int, err error) {
 }
 
 func TestLBServeFailsWithRadiusError(t *testing.T) {
+	t.Skip()
 	// Arrange
 	var sessionID = "sessionID"
 

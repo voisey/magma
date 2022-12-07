@@ -26,6 +26,7 @@ import (
 )
 
 func TestCoaFixed(t *testing.T) {
+	t.Skip()
 	// Arrange
 	secret := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06}
 	port := 4799

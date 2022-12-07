@@ -26,6 +26,7 @@ import (
 
 // TestAnalyticsModulesAuthenticate tests the Analytics module handling of the Authenticate RADIUS packet
 func TestSendOdsCounters(t *testing.T) {
+	t.Skip()
 	// Arrange
 	logger, _ := zap.NewDevelopment()
 	Initialize(&config.Scuba{

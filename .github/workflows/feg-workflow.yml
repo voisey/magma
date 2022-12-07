@@ -157,3 +157,8 @@ jobs:
         run: |
           cd $MAGMA_ROOT/feg/radius/src
           ./run.sh lint
+      - name: Run unit tests
+        if: always()
+        run: |
+          cd $MAGMA_ROOT/feg/radius/src
+          ./run.sh test

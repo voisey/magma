@@ -29,6 +29,7 @@ import (
 )
 
 func TestProxy(t *testing.T) {
+	t.Skip()
 	// Arrange
 	var sessionID = "sessionID"
 	randomPort := (rand.Int63() % 0xFFF) << 4
