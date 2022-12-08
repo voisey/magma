@@ -157,6 +157,11 @@ jobs:
         run: |
           cd $MAGMA_ROOT/feg/radius/src
           ./run.sh lint
+      - name: Run linter in lib
+        if: always()
+        run: |
+          cd $MAGMA_ROOT/feg/radius/lib/go/
+          for dir in */; do (cd "$dir" && $MAGMA_ROOT/feg/radius/src/run.sh lint); done
       - name: Run unit tests
         if: always()
         run: |
