@@ -16,12 +16,12 @@ import sys
 from typing import Any, List, Optional
 
 import urllib3
-from fabric.api import cd
+from fabric import Connection, task
 
 sys.path.append('../../orc8r')
 import tools.fab.dev_utils as dev_utils
 import tools.fab.types as types
-from tools.fab.hosts import vagrant_setup
+from tools.fab.vagrant import setup_env_vagrant
 
 LTE_NETWORK_TYPE = 'lte'
 FEG_LTE_NETWORK_TYPE = 'feg_lte'
@@ -36,7 +36,8 @@ FEG_FAB_PATH = '../../feg/gateway/'
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def register_vm():
+@task
+def register_vm(c):
     network_payload = LTENetwork(
         id=NIDS_BY_TYPE[LTE_NETWORK_TYPE],
         name='Test Network', description='Test Network',
@@ -66,7 +67,7 @@ def register_vm():
         dns=types.NetworkDNSConfig(enable_caching=False, local_ttl=60),
     )
     _register_network(LTE_NETWORK_TYPE, network_payload)
-    _register_agw(LTE_NETWORK_TYPE)
+    _register_agw(c, LTE_NETWORK_TYPE)
 
 
 def register_vm_remote(certs_dir: str, network_id: str, url: str):
@@ -74,7 +75,7 @@ def register_vm_remote(certs_dir: str, network_id: str, url: str):
     Register local VM gateway with remote controller.
 
     Example usage:
-    fab -f dev_tools.py register_vm_remote:certs_dir=~/certs,network_id=test,url=https://api.stable.magmaeng.org
+    fab register-vm-remote --certs-dir=~/certs --network-id=test --url=https://api.stable.magmaeng.org
     """
     if None in {certs_dir, url, network_id}:
         print()
@@ -90,6 +91,7 @@ def register_vm_remote(certs_dir: str, network_id: str, url: str):
     full_url = url + '/magma/v1/'
 
     _register_agw(
+        c,
         LTE_NETWORK_TYPE,
         url=full_url,
         admin_cert=admin_cert,
@@ -97,7 +99,8 @@ def register_vm_remote(certs_dir: str, network_id: str, url: str):
     )
 
 
-def register_federated_vm():
+@task
+def register_federated_vm(c):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     network_payload = FederatedLTENetwork(
         id=NIDS_BY_TYPE[FEG_LTE_NETWORK_TYPE],
@@ -130,63 +133,79 @@ def register_federated_vm():
     )
     _register_network(FEG_LTE_NETWORK_TYPE, network_payload)
     # registering gateway with LTE type. FEG_LTE doesn't have gateway endpoint
-    _register_agw(FEG_LTE_NETWORK_TYPE)
+    _register_agw(c, FEG_LTE_NETWORK_TYPE)
 
 
-def deregister_agw():
+@task
+def deregister_agw(c):
     """
     Remove AGW gateway from orc8r and remove certs from FEG gateway
     """
-    dev_utils.delete_gateway_certs_from_vagrant('magma')
-    _deregister_agw(LTE_NETWORK_TYPE)
+    dev_utils.delete_gateway_certs_from_vagrant(c, 'magma')
+    _deregister_agw(c, LTE_NETWORK_TYPE)
 
 
-def deregister_federated_agw():
+@task
+def deregister_federated_agw(c):
     """
     Remove AGW gateway from orc8r and remove certs from FEG gateway
     """
-    dev_utils.delete_gateway_certs_from_vagrant('magma')
-    _deregister_agw(FEG_LTE_NETWORK_TYPE)
+    dev_utils.delete_gateway_certs_from_vagrant(c, 'magma')
+    _deregister_agw(c, FEG_LTE_NETWORK_TYPE)
 
 
-def register_feg_gw():
+@task
+def register_feg_gw(c):
     """
     Registers FEG AGW gateway on orc8r
     """
     subprocess.check_call(
-        'fab register_feg_gw', shell=True, cwd=FEG_FAB_PATH,
+        'fab register-feg-gw', shell=True, cwd=FEG_FAB_PATH,
     )
 
 
-def deregister_feg_gw():
+@task
+def deregister_feg_gw(c):
     """
     Remove FEG gateway from orc8r and remove certs from FEG gateway
     """
     subprocess.check_call(
-        'fab deregister_feg_gw', shell=True, cwd=FEG_FAB_PATH,
+        'fab deregister-feg-gw', shell=True, cwd=FEG_FAB_PATH,
     )
 
 
-def check_agw_cloud_connectivity(timeout=10):
+@task
+def check_agw_cloud_connectivity(c, timeout=10):
     """
     Check connectivity of AGW with the cloud using checkin_cli.py
     Args:
+        c: fabric connection
         timeout: amount of time the command will retry
     """
-    vagrant_setup("magma", destroy_vm=False, force_provision=False)
-    with cd("/home/vagrant/build/python/bin/"):
-        dev_utils.run_remote_command_with_repetition("./checkin_cli.py", timeout)
+    host_data = setup_env_vagrant(c, "magma", force_provision=False)
+    with Connection(
+        host_data.get('host_string'),
+        connect_kwargs={'key_filename': host_data.get('key_filename')},
+    ) as cvm:
+        with cvm.cd("/home/vagrant/build/python/bin/"):
+            dev_utils.run_remote_command_with_repetition(cvm, "./checkin_cli.py", timeout)
 
 
-def check_agw_feg_connectivity(timeout=10):
+@task
+def check_agw_feg_connectivity(c, timeout=10):
     """
     Check connectivity of AGW with FEG feg_hello_cli.py
     Args:
+        c: fabric connection
         timeout: amount of time the command will retry
     """
-    vagrant_setup("magma", destroy_vm=False, force_provision=False)
-    with cd("/home/vagrant/build/python/bin/"):
-        dev_utils.run_remote_command_with_repetition("./feg_hello_cli.py m 0", timeout)
+    host_data = setup_env_vagrant(c, "magma", force_provision=False)
+    with Connection(
+        host_data.get('host_string'),
+        connect_kwargs={'key_filename': host_data.get('key_filename')},
+    ) as cvm:
+        with cvm.cd("/home/vagrant/build/python/bin/"):
+            dev_utils.run_remote_command_with_repetition(cvm, "./feg_hello_cli.py m 0", timeout)
 
 
 def _register_network(network_type: str, payload: Any):
@@ -197,6 +216,7 @@ def _register_network(network_type: str, payload: Any):
 
 
 def _register_agw(
+        c: Connection,
         network_type: str,
         url: Optional[str] = None,
         admin_cert: Optional[types.ClientCert] = None,
@@ -211,7 +231,7 @@ def _register_agw(
         admin_cert=admin_cert,
     )
 
-    hw_id = dev_utils.get_gateway_hardware_id_from_vagrant(vm_name='magma')
+    hw_id = dev_utils.get_gateway_hardware_id_from_vagrant(c, vm_name='magma')
     already_registered, registered_as = dev_utils.is_hw_id_registered(
         network_id,
         hw_id,
@@ -256,9 +276,9 @@ def _register_agw(
     print(f'=========================================')
 
 
-def _deregister_agw(network_type: str):
+def _deregister_agw(c: Connection, network_type: str):
     network_id = NIDS_BY_TYPE[network_type]
-    hw_id = dev_utils.get_gateway_hardware_id_from_vagrant(vm_name='magma')
+    hw_id = dev_utils.get_gateway_hardware_id_from_vagrant(c, vm_name='magma')
     already_registered, registered_as = dev_utils.is_hw_id_registered(
         network_id, hw_id,
     )

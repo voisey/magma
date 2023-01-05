@@ -10,7 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from fabric.api import env, lcd, local
+from fabric import Connection
 from tools.fab import vagrant
 
 
@@ -23,19 +23,18 @@ def split_hoststring(hoststring):
     user = hoststring[0:hoststring.find('@')]
     ip = hoststring[hoststring.find('@') + 1:hoststring.find(':')]
     port = hoststring[hoststring.find(':') + 1:]
-    return (user, ip, port)
+    return user, ip, port
 
 
-def vagrant_setup(host, destroy_vm, force_provision=False):
+def vagrant_setup(c, host, destroy_vm, force_provision=False):
     """
     Setup the specified vagrant box
 
     host: the Vagrant box to setup, e.g. "magma"
     """
     if destroy_vm:
-        vagrant.teardown_vagrant(host)
-    vagrant.setup_env_vagrant(host, force_provision=force_provision)
-    return env.hosts[0]
+        vagrant.teardown_vagrant(c, host)
+    return vagrant.setup_env_vagrant(c, host, force_provision=force_provision)
 
 
 def ansible_setup(
@@ -57,17 +56,16 @@ def ansible_setup(
     full_provision: 'true' to run post-preburn tasks, 'false' to skip them.
                     Defaults to 'true'
     """
-    env.hosts = [hoststr]
-    env.disable_known_hosts = False
     # Provision the gateway host
     (user, ip, port) = split_hoststring(hoststr)
 
-    local(
-        "echo '[%s]\nhost ansible_host=%s ansible_user=%s"
-        " ansible_port=%s' > /tmp/hosts" % (ansible_group, ip, user, port),
-    )
-    local(
-        "ansible-playbook -i /tmp/hosts deploy/%s "
-        "--extra-vars '{\"preburn\": %s, \"full_provision\": %s}'" %
-        (playbook, preburn, full_provision),
-    )
+    with Connection(host=ip, user=user, port=port) as c:
+        c.run(
+            "echo '[%s]\nhost ansible_host=%s ansible_user=%s"
+            " ansible_port=%s' > /tmp/hosts" % (ansible_group, ip, user, port),
+        )
+        c.run(
+            "ansible-playbook -i /tmp/hosts deploy/%s "
+            "--extra-vars '{\"preburn\": %s, \"full_provision\": %s}'" %
+            (playbook, preburn, full_provision),
+        )
