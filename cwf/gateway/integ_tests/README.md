@@ -48,11 +48,12 @@ This VM runs an iperf3 server.
 
 #### Requirements
 
-- fabric3
+- fabric
+- patchwork
 - see <https://magma.github.io/magma/docs/basics/prerequisites> for
 our prerequisites on running our VMs.
 
-To the run the test, run `fab integ_test` from `magma/cwf/gateway`.
+To run the test, run `fab integ-test --build` from `magma/cwf/gateway`.
 This fabfile will
 
 - Provision the 3 VMs
@@ -64,11 +65,11 @@ This fabfile will
 
 #### Fab script parameters
 
-- `no_build`: The fabfile by default stops, rebuilds, and starts all containers. If you
-only want to restart the containers, and not rebuild everything, run
-`fab integ_test:no_build=True`.
-- `tests_to_run`: By default, the fab script will run all existing tests. You can
-specify a subset of them with this flag. For example, run `fab integ_test:tests_to_run=gx`,
+- `build`: The fabfile by default only stops and restarts all containers. If you
+want rebuild everything, run
+`fab integ-test --build`.
+- `tests-to-run`: By default, the fab script will run all existing tests. You can
+specify a subset of them with this flag. For example, run `fab integ-test --tests-to-run=gx`,
 to only run Gx tests. See the fabfile for more options.
 
 ## Debugging on `cwag-dev` VM
