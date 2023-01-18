@@ -117,8 +117,10 @@ def package(
             build_cmd = f'./release/build-magma.sh --hash {hash}' \
                         f' --commit-count {commit_count} --type {build_type}' \
                         f' --cert {cert_file} --proxy {proxy_config} --os {os}'
+            # set '/usr/bin/' in PATH to ensure that the correct version of
+            # python is used
             c_agw.run(
-                env={'PATH': '$PATH:/usr/local/go/bin:/home/vagrant/go/bin:/usr/lib/ccache'},
+                env={'PATH': '/usr/bin:/usr/local/go/bin:/home/vagrant/go/bin:/usr/lib/ccache:$PATH'},
                 command=build_cmd,
             )
 
