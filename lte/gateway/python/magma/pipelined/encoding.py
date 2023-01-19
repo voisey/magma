@@ -103,6 +103,7 @@ def decrypt_str(data, key: bytes, encryption_algorithm, mac) -> str:
 
 
 def get_hash(s, hash_function) -> bytes:
+    
     hash_bytes: bytes
     if hash_function == PipelineD.HEConfig.MD5:
         m = hashlib.md5()

@@ -78,6 +78,7 @@ class BasicEnodebAcsStateMachine(EnodebAcsStateMachine):
         self._start_state_machine(service)
 
     def get_state(self) -> str:
+
         if self.state is None:
             logger.warning('ACS State machine is not in any state.')
             return 'N/A'
