@@ -502,7 +502,7 @@ class Classifier(MagmaController):
         ip_flow_dl: Optional[IPFlowDL] = None,
         ue_ipv6_adr: Optional[IPAddress] = None,
         ng_flag: bool = True, session_qfi: QCI = 0,
-    ) -> bool:
+    ) -> str:
 
         # Delete flow for gtp port
         if enodeb_ip_addr:
