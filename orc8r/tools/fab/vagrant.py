@@ -16,21 +16,22 @@ import os.path
 from fabric import Connection
 
 
-def _ensure_in_vagrant_dir(c):
+def _ensure_in_vagrant_dir(c: Connection) -> None:
     """
     Error out if there is not Vagrant instance associated with this directory
     """
     pwd = c.run('pwd', hide=True).stdout.strip()
     if not os.path.isfile(pwd + '/Vagrantfile'):
         # check if we are on a vagrant subdirectory
-        # with c.cd(pwd):
         if not c.run('vagrant validate', hide=True, warn=True).return_code == 0:
             print("Error: Vagrantfile not found")
             exit(1)
     return
 
 
-def setup_env_vagrant(c, machine='magma', force_provision=False):
+def setup_env_vagrant(
+    c: Connection, machine: str = 'magma', force_provision: bool = False,
+) -> dict:
     """ Host config for local Vagrant VM.
 
     Sets the environment to point at the local vagrant machine. Used
@@ -82,7 +83,7 @@ def setup_env_vagrant(c, machine='magma', force_provision=False):
     }
 
 
-def teardown_vagrant(c, machine):
+def teardown_vagrant(c: Connection, machine: str) -> None:
     """ Destroy a vagrant machine so that we get a clean environment to work
         in
     """

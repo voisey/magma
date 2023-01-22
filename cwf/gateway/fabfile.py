@@ -132,28 +132,28 @@ def integ_test(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
         inline_ssh_env=True,
-    ) as cvm:
-        if exists(cvm, "/var/opt/magma/cores/"):
-            cvm.run("sudo rm /var/opt/magma/cores/*", warn=True, hide='err')
+    ) as c_cwf:
+        if exists(c_cwf, "/var/opt/magma/cores/"):
+            c_cwf.run("sudo rm /var/opt/magma/cores/*", warn=True, hide='err')
         else:
-            cvm.run("sudo mkdir -p /var/opt/magma/cores", warn=True)
+            c_cwf.run("sudo mkdir -p /var/opt/magma/cores", warn=True)
 
         if not skip_unit_tests:
-            _run_unit_tests(cvm)
+            _run_unit_tests(c_cwf)
 
-        _set_cwag_configs(cvm, "gateway.mconfig")
-        _add_networkhost_docker(cvm)
-        cwag_br_mac = _get_br_mac(cvm, CWAG_BR_NAME)
+        _set_cwag_configs(c_cwf, "gateway.mconfig")
+        _add_networkhost_docker(c_cwf)
+        cwag_br_mac = _get_br_mac(c_cwf, CWAG_BR_NAME)
 
         # Transfer built images from local machine to CWAG host
         if gateway_host or transfer_images:
-            _transfer_docker_images(cvm, skip_docker_load, tar_path)
+            _transfer_docker_images(c_cwf, skip_docker_load, tar_path)
         else:
-            _stop_gateway(cvm)
+            _stop_gateway(c_cwf)
             if build:
-                _build_gateway(cvm)
+                _build_gateway(c_cwf)
 
-        _run_gateway(cvm)
+        _run_gateway(c_cwf)
 
     # Setup the trfserver: use the provided trfserver if given, else default to
     # the vagrant machine
@@ -165,8 +165,8 @@ def integ_test(
         with Connection(
             trf_host_data.get("host_string"),
             connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-        ) as cvm:
-            _start_trfserver(cvm)
+        ) as c_trf:
+            _start_trfserver(c_trf)
 
     # Run the tests: use the provided test machine if given, else default to
     # the vagrant machine
@@ -181,33 +181,33 @@ def integ_test(
     with Connection(
         test_host_data.get("host_string"),
         connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as cvm:
-        cwag_test_br_mac = _get_br_mac(cvm, CWAG_TEST_BR_NAME)
-        _set_cwag_test_configs(cvm)
-        _set_cwag_configs(cvm, "gateway.mconfig")
-        _start_ipfix_controller(cvm)
+    ) as c_test:
+        cwag_test_br_mac = _get_br_mac(c_test, CWAG_TEST_BR_NAME)
+        _set_cwag_test_configs(c_test)
+        _set_cwag_configs(c_test, "gateway.mconfig")
+        _start_ipfix_controller(c_test)
 
     # Get back to the gateway vm to setup static arp
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        _set_cwag_networking(cvm, cwag_test_br_mac)
+    ) as c_cwf:
+        _set_cwag_networking(c_cwf, cwag_test_br_mac)
 
         # check if docker services are alive except for OCS2 and PCRF2
         ignore_list = ["ocs2", "pcrf2"]
-        _check_docker_services(cvm, ignore_list)
+        _check_docker_services(c_cwf, ignore_list)
 
     with Connection(
         test_host_data.get("host_string"),
         connect_kwargs={"key_filename": test_host_data.get("key_filename")},
         inline_ssh_env=True,
-    ) as cvm:
-        _start_ue_simulator(cvm)
-        _set_cwag_test_networking(cvm, cwag_br_mac)
+    ) as c_test:
+        _start_ue_simulator(c_test)
+        _set_cwag_test_networking(c_test, cwag_br_mac)
 
         if skip_integ_tests:
-            _add_docker_host_remote_network_envvar(cvm)
+            _add_docker_host_remote_network_envvar(c_test)
             print(
                 "run_tests was set to false. Test will not be run\n"
                 "You can now run the tests manually from cwag_test",
@@ -254,21 +254,21 @@ def transfer_artifacts(
     with Connection(
         host=host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        with cvm.cd(CWAG_ROOT):
+    ) as c_cwf:
+        with c_cwf.cd(CWAG_ROOT):
             for service in services:
-                cvm.run("docker logs -t " + service + " &> " + service + ".log")
+                c_cwf.run("docker logs -t " + service + " &> " + service + ".log")
                 # For vagrant the files should already be in CWAG_ROOT
             if get_core_dump:
-                _tar_coredump(cvm)
+                _tar_coredump(c_cwf)
 
 
-def _tar_coredump(c):
-    core_dump_dir = c.run('ls /var/opt/magma/cores/')
+def _tar_coredump(c_cwf):
+    core_dump_dir = c_cwf.run('ls /var/opt/magma/cores/')
     num_of_dumps = len(core_dump_dir.split())
     print(f'Found {num_of_dumps} core dumps')
     if num_of_dumps > 0:
-        c.run(
+        c_cwf.run(
             "sudo tar -czvf coredump.tar.gz /var/opt/magma/cores/*",
             warn=True,
         )
@@ -285,76 +285,76 @@ def _set_up_vm_no_destroy(c, addr, host_name, ansible_file):
     return _set_up_vm(c, addr, host_name, ansible_file, False, False)
 
 
-def _transfer_docker_images(c, skip_docker_load, tar_path):
+def _transfer_docker_images(c_cwf, skip_docker_load, tar_path):
     if skip_docker_load:
         print("Skipping docker save step and grabbing whatever is in " + tar_path)
     else:
         print("Loading cwf_* docker images into " + tar_path)
-        c.local("rm -rf " + tar_path)
-        c.local("mkdir -p " + tar_path)
-        output = c.local("docker images cwf_*").stdout
+        c_cwf.local("rm -rf " + tar_path)
+        c_cwf.local("mkdir -p " + tar_path)
+        output = c_cwf.local("docker images cwf_*").stdout
         for line in output.splitlines():
             if not line.startswith('cwf'):
                 continue
             line = line.rstrip("\n")
             image = line.split(" ")[0]
-            c.local(f"docker save -o {tar_path}/{image}.tar {image}")
+            c_cwf.local(f"docker save -o {tar_path}/{image}.tar {image}")
 
-    output = c.local(f"ls {tar_path}/cwf_*.tar").stdout
+    output = c_cwf.local(f"ls {tar_path}/cwf_*.tar").stdout
     for line in output.splitlines():
         regex = f'{tar_path}/(.+?).tar'
         match = re.search(regex, line)
         if match:
             image = match.group(1)
-            c.put(f"{tar_path}/{image}.tar", f"{image}.tar")
-            c.run(f'docker load -i {image}.tar')
+            c_cwf.put(f"{tar_path}/{image}.tar", f"{image}.tar")
+            c_cwf.run(f'docker load -i {image}.tar')
         else:
             print("We should not be here, but " + line + " does not match regex: " + regex)
 
 
-def _set_cwag_configs(c, configfile):
+def _set_cwag_configs(c_vm, configfile):
     """ Set the necessary config overrides """
-    c.sudo('mkdir -p /var/opt/magma/configs')
-    c.sudo(f"cp {CWAG_INTEG_ROOT}/{configfile} /var/opt/magma/configs/gateway.mconfig")
+    c_vm.sudo('mkdir -p /var/opt/magma/configs')
+    c_vm.sudo(f"cp {CWAG_INTEG_ROOT}/{configfile} /var/opt/magma/configs/gateway.mconfig")
 
 
-def _set_cwag_networking(c, mac):
-    c.sudo(f'arp -s {CWAG_TEST_IP} {mac}')
+def _set_cwag_networking(c_cwf, mac):
+    c_cwf.sudo(f'arp -s {CWAG_TEST_IP} {mac}')
 
 
-def _get_br_mac(c, bridge_name):
-    mac = c.run(f"cat /sys/class/net/{bridge_name}/address").stdout.strip()
+def _get_br_mac(c_vm, bridge_name):
+    mac = c_vm.run(f"cat /sys/class/net/{bridge_name}/address").stdout.strip()
     return mac
 
 
-def _set_cwag_test_configs(c):
+def _set_cwag_test_configs(c_test):
     """ Set the necessary test configs """
-    c.sudo('mkdir -p /etc/magma')
+    c_test.sudo('mkdir -p /etc/magma')
     # Create empty uesim config
-    c.sudo('touch /etc/magma/uesim.yml')
-    c.sudo('cp -r $MAGMA_ROOT/cwf/gateway/configs /etc/magma/')
+    c_test.sudo('touch /etc/magma/uesim.yml')
+    c_test.sudo('cp -r $MAGMA_ROOT/cwf/gateway/configs /etc/magma/')
 
 
-def _start_ipfix_controller(c):
+def _start_ipfix_controller(c_test):
     """ Start the IPFIX collector"""
-    with c.cd("$MAGMA_ROOT"):
-        c.run('mkdir -p records')
-        c.run('rm -rf records/*')
-        c.run('sudo pkill ipfix_collector > /dev/null &', pty=False, warn=True)
-        c.run('sudo tmux new -d \'/usr/bin/ipfix_collector -4tu -p 4740 -o /home/vagrant/magma/records\'')
+    with c_test.cd("$MAGMA_ROOT"):
+        c_test.run('mkdir -p records')
+        c_test.run('rm -rf records/*')
+        c_test.run('sudo pkill ipfix_collector > /dev/null &', pty=False, warn=True)
+        c_test.run('sudo tmux new -d \'/usr/bin/ipfix_collector -4tu -p 4740 -o /home/vagrant/magma/records\'')
 
 
-def _set_cwag_test_networking(c, mac):
+def _set_cwag_test_networking(c_test, mac):
     # Don't error if route already exists
-    c.sudo(
+    c_test.sudo(
         f'ip route add {TRF_SERVER_SUBNET}/24 '
         f'dev {CWAG_TEST_BR_NAME} proto static scope link',
         warn=True,
     )
-    c.sudo(f'arp -s {TRF_SERVER_IP} {mac}')
+    c_test.sudo(f'arp -s {TRF_SERVER_IP} {mac}')
 
 
-def _add_networkhost_docker(c):
+def _add_networkhost_docker(c_cwf):
     """ Add network host to docker engine """
 
     local_host = "unix:///var/run/docker.sock"
@@ -364,28 +364,28 @@ def _add_networkhost_docker(c):
 
     # add daemon json file
     host_cfg = '\'{"hosts": [\"%s\", \"%s\"]}\'' % (local_host, nw_host)
-    c.run("""printf %s > %s""" % (host_cfg, tmp_daemon_json_fn))
-    c.sudo(f'mkdir -p {docker_cfg_dir}')
-    c.sudo(f"mv {tmp_daemon_json_fn} {docker_cfg_dir}")
+    c_cwf.run("""printf %s > %s""" % (host_cfg, tmp_daemon_json_fn))
+    c_cwf.sudo(f'mkdir -p {docker_cfg_dir}')
+    c_cwf.sudo(f"mv {tmp_daemon_json_fn} {docker_cfg_dir}")
 
     # modify docker service cmd to remove hosts
     # https://docs.docker.com/config/daemon/#troubleshoot-conflicts-between-the-daemonjson-and-startup-scripts
     tmp_docker_svc_fn = "/tmp/docker.conf"
     svc_cmd = "'[Service]\nExecStart=\nExecStart=/usr/bin/dockerd'"
     svc_cfg_dir = "/etc/systemd/system/docker.service.d/"
-    c.sudo(f"mkdir -p {svc_cfg_dir}")
-    c.run(f"printf {svc_cmd} > {tmp_docker_svc_fn}")
-    c.sudo(f"mv {tmp_docker_svc_fn} {svc_cfg_dir}")
+    c_cwf.sudo(f"mkdir -p {svc_cfg_dir}")
+    c_cwf.run(f"printf {svc_cmd} > {tmp_docker_svc_fn}")
+    c_cwf.sudo(f"mv {tmp_docker_svc_fn} {svc_cfg_dir}")
 
     # restart systemd and docker service
-    c.sudo("systemctl daemon-reload")
-    c.sudo("systemctl restart docker")
+    c_cwf.sudo("systemctl daemon-reload")
+    c_cwf.sudo("systemctl restart docker")
 
 
-def _stop_gateway(c):
+def _stop_gateway(c_cwf):
     """ Stop the gateway docker images """
-    with c.cd(CWAG_ROOT + '/docker'):
-        c.run(
+    with c_cwf.cd(CWAG_ROOT + '/docker'):
+        c_cwf.run(
             ' docker compose'
             ' -f docker-compose.yml'
             ' -f docker-compose.override.yml'
@@ -394,10 +394,10 @@ def _stop_gateway(c):
         )
 
 
-def _build_gateway(c):
+def _build_gateway(c_cwf):
     """ Builds the gateway docker images """
-    with c.cd(CWAG_ROOT + '/docker'):
-        c.run(
+    with c_cwf.cd(CWAG_ROOT + '/docker'):
+        c_cwf.run(
             ' docker compose'
             ' --compatibility'
             ' -f docker-compose.yml'
@@ -408,10 +408,10 @@ def _build_gateway(c):
         )
 
 
-def _run_gateway(c):
+def _run_gateway(c_cwf):
     """ Runs the gateway's docker images """
-    with c.cd(CWAG_ROOT + '/docker'):
-        c.run(
+    with c_cwf.cd(CWAG_ROOT + '/docker'):
+        c_cwf.run(
             ' docker compose'
             ' --compatibility'
             ' -f docker-compose.yml'
@@ -421,15 +421,15 @@ def _run_gateway(c):
         )
 
 
-def _check_docker_services(c, ignore_list):
-    with c.cd(CWAG_ROOT + "/docker"):
+def _check_docker_services(c_cwf, ignore_list):
+    with c_cwf.cd(CWAG_ROOT + "/docker"):
         grep_ignore = "| grep --invert-match '" + \
             '\\|'.join(ignore_list) + "'" if ignore_list else ""
         count = 0
         while count < 5:
             # force wait to make sure docker logs are up
             time.sleep(1)
-            result = c.run(
+            result = c_cwf.run(
                 " docker ps --format \"{{.Names}}\t{{.Status}}\" | "
                 "grep Restarting" + grep_ignore,
                 hide=True, warn=True,
@@ -445,33 +445,33 @@ def _check_docker_services(c, ignore_list):
     sys.exit(1)
 
 
-def _start_ue_simulator(c):
+def _start_ue_simulator(c_test):
     """ Starts the UE Sim Service and logs into uesim.log"""
-    with c.cd(CWAG_ROOT + '/services/uesim/uesim'):
-        c.run(
+    with c_test.cd(CWAG_ROOT + '/services/uesim/uesim'):
+        c_test.run(
             env={'PATH': '$PATH:/usr/local/go/bin:/home/vagrant/go/bin'},
             command=f'tmux new -d \'go run main.go -logtostderr=true -v=9 &> {CWAG_ROOT}/uesim.log\'',
         )
 
 
-def _start_trfserver(c):
+def _start_trfserver(c_trf):
     """ Starts the traffic gen server"""
     trf_cmd = f'nohup iperf3 -s --json -B {TRF_SERVER_IP} > /dev/null &'
-    c.sudo('apt-get install -y dtach')
-    c.sudo(f"dtach -n `mktemp -u /tmp/dtach.XXXX` {trf_cmd}")
+    c_trf.sudo('apt-get install -y dtach')
+    c_trf.sudo(f"dtach -n `mktemp -u /tmp/dtach.XXXX` {trf_cmd}")
 
 
-def _run_unit_tests(c):
+def _run_unit_tests(c_cwf):
     """ Run the cwag unit tests """
-    with c.cd(CWAG_ROOT):
-        c.run(
+    with c_cwf.cd(CWAG_ROOT):
+        c_cwf.run(
             env={'PATH': '$PATH:/usr/local/go/bin:/home/vagrant/go/bin'},
             command='make test',
         )
 
 
-def _add_docker_host_remote_network_envvar(c):
-    c.run(
+def _add_docker_host_remote_network_envvar(c_test):
+    c_test.run(
         f"grep -q 'DOCKER_HOST=tcp://{CWAG_IP}:2375' /etc/environment || "
         f"echo 'DOCKER_HOST=tcp://{CWAG_IP}:2375' | sudo tee -a /etc/environment > /dev/null && "
         "echo 'DOCKER_API_VERSION=1.40' | sudo tee -a /etc/environment > /dev/null",
@@ -507,9 +507,9 @@ def _run_integ_tests(
         host=host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
         inline_ssh_env=True,
-    ) as cvm:
-        with cvm.cd(CWAG_INTEG_ROOT):
-            result = cvm.run(env=shell_env_vars, command=go_test_cmd, warn=True)
+    ) as c_cwf:
+        with c_cwf.cd(CWAG_INTEG_ROOT):
+            result = c_cwf.run(env=shell_env_vars, command=go_test_cmd, warn=True)
 
     if result.return_code != 0:
         if not test_host and not trf_host:
@@ -527,8 +527,8 @@ def _clean_up(c, trf_host_data):
         with Connection(
             trf_host_data.get("host_string"),
             connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-        ):
-            c.run('pkill iperf3 > /dev/null &', pty=False, warn=True)
+        ) as c_trf:
+            c_trf.run('pkill iperf3 > /dev/null &', pty=False, warn=True)
 
 
 class FabricException(Exception):

@@ -101,10 +101,8 @@ jobs:
           MAGMA_DEV_CPUS: 3
           MAGMA_DEV_MEMORY_MB: 9216
         working-directory: lte/gateway
-        # fabric 2 does not support environment variables, so we need to pass them via a config file
         run: |
-          echo ${{ inputs.registry }} >> /tmp/docker_registry
-          fab -d integ-test-containerized --destroy-vm --provision-vm --test-mode=${{ inputs.test_targets }}
+          fab -d integ-test-containerized --destroy-vm --provision-vm --test-mode=${{ inputs.test_targets }} --docker-registry=${{ inputs.registry }}
       - name: Get test results
         if: always()
         working-directory: lte/gateway

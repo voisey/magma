@@ -59,7 +59,7 @@ jobs:
           cd lte/gateway
           export MAGMA_DEV_CPUS=3
           export MAGMA_DEV_MEMORY_MB=9216
-          fab provision-magma-dev-vm
+          fab provision-magma-dev-vm --destroy-vm --provision-vm
       - name: Run the sudo python tests
         run: |
           cd lte/gateway

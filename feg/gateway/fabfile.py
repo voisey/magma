@@ -69,11 +69,11 @@ def check_feg_cloud_connectivity(c, timeout=5):
         with Connection(
             host=host_data.get("host_string"),
             connect_kwargs={"key_filename": host_data.get("key_filename")},
-        ) as cvm:
-            with cvm.cd(FEG_INTEG_DOCKER):
-                cvm.run("pwd")
+        ) as c_agw:
+            with c_agw.cd(FEG_INTEG_DOCKER):
+                c_agw.run("pwd")
                 dev_utils.run_remote_command_with_repetition(
-                    cvm, "docker compose exec magmad checkin_cli.py", timeout,
+                    c_agw, "docker compose exec magmad checkin_cli.py", timeout,
                 )
 
 

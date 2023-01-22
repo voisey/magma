@@ -96,16 +96,16 @@ def package(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
         inline_ssh_env=True,
-    ) as cvm:
+    ) as c_agw:
         print('Uninstalling dev dependencies of the VM')
-        cvm.run('sudo pip uninstall --yes mypy-protobuf grpcio-tools grpcio protobuf')
+        c_agw.run('sudo pip uninstall --yes mypy-protobuf grpcio-tools grpcio protobuf')
 
-        with cvm.cd('~/magma/lte/gateway'):
-            cvm.run('mkdir -p ~/magma-deps')
+        with c_agw.cd('~/magma/lte/gateway'):
+            c_agw.run('mkdir -p ~/magma-deps')
             print(
                 'Generating lte/setup.py and orc8r/setup.py magma dependency packages',
             )
-            cvm.run(
+            c_agw.run(
                 './release/pydep finddep --install-from-repo -b --build-output '
                 + '~/magma-deps'
                 + f' -l ./release/magma.lockfile.{os}'
@@ -114,82 +114,86 @@ def package(
             )
 
             print(f'Building magma package, picking up commit {hash}...')
-            cvm.run('make clean')
+            c_agw.run('make clean')
             build_type = "Debug" if debug_mode else "RelWithDebInfo"
 
             build_cmd = f'./release/build-magma.sh --hash {hash}' \
                         f' --commit-count {commit_count} --type {build_type}' \
                         f' --cert {cert_file} --proxy {proxy_config} --os {os}'
-            cvm.run(
+            c_agw.run(
                 env={'PATH': '$PATH:/usr/local/go/bin:/home/vagrant/go/bin:/usr/lib/ccache'},
                 command=build_cmd,
             )
 
-            cvm.run('rm -rf ~/magma-packages')
-            cvm.run('mkdir -p ~/magma-packages')
-            cvm.run('cp -f ~/magma-deps/*.deb ~/magma-packages', warn=True)
-            cvm.run('mv *.deb ~/magma-packages')
+            c_agw.run('rm -rf ~/magma-packages')
+            c_agw.run('mkdir -p ~/magma-packages')
+            c_agw.run('cp -f ~/magma-deps/*.deb ~/magma-packages', warn=True)
+            c_agw.run('mv *.deb ~/magma-packages')
 
-            with cvm.cd('release'):
+            with c_agw.cd('release'):
                 mirrored_packages_file = 'mirrored_packages'
                 if os == "ubuntu":
                     mirrored_packages_file += '_focal'
                 if vm and vm.startswith('magma_'):
                     mirrored_packages_file += vm[5:]
 
-                cvm.run(
+                c_agw.run(
                     f'cat {mirrored_packages_file}'
                     + ' | xargs -I% sudo aptitude download -q2 %',
                 )
-                cvm.run('cp *.deb ~/magma-packages')
-                cvm.run('sudo rm -f *.deb')
+                c_agw.run('cp *.deb ~/magma-packages')
+                c_agw.run('sudo rm -f *.deb')
 
             if all_deps:
-                pkg.download_all_pkgs(cvm)
-                cvm.run('cp /var/cache/apt/archives/*.deb ~/magma-packages')
+                pkg.download_all_pkgs(c_agw)
+                c_agw.run('cp /var/cache/apt/archives/*.deb ~/magma-packages')
 
             # Copy out C executables into magma-packages as well
-            _copy_out_c_execs_in_magma_vm(cvm)
+            _copy_out_c_execs_in_magma_vm(c_agw)
 
 
 @task
 def openvswitch(c, destroy_vm=False, destdir='~/magma-packages/'):
     # If a host list isn't specified, default to the magma vagrant vm
-    vagrant_setup(c, 'magma', destroy_vm=destroy_vm)
-    c.run('~/magma/third_party/gtp_ovs/ovs-gtp-patches/2.15/build.sh ' + destdir)
+    host_data = vagrant_setup(c, 'magma', destroy_vm=destroy_vm)
+    with Connection(
+            host_data.get("host_string"),
+            connect_kwargs={"key_filename": host_data.get("key_filename")},
+    ) as c_agw:
+        c_agw.run('~/magma/third_party/gtp_ovs/ovs-gtp-patches/2.15/build.sh ' + destdir)
 
 
 @task
 def depclean(c):
     '''Remove all generated packaged for dependencies'''
     # If a host list isn't specified, default to the magma vagrant vm
-    host_data = setup_env_vagrant(c)
+    host_data = setup_env_vagrant(c, 'magma')
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        cvm.run('rm -rf ~/magma-deps')
+    ) as c_agw:
+        c_agw.run('rm -rf ~/magma-deps')
 
 
 @task
 def upload_to_aws(c):
     # If a host list isn't specified, default to the magma vagrant vm
-    host_data = setup_env_vagrant(c)
+    host_data = setup_env_vagrant(c, 'magma')
     with Connection(
             host_data.get("host_string"),
             connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        pkg.upload_pkgs_to_aws(cvm)
+    ) as c_agw:
+        pkg.upload_pkgs_to_aws(c_agw)
 
 
 @task
 def copy_packages(c):
-    host_data = setup_env_vagrant(c)
+    host_data = setup_env_vagrant(c, 'magma')
     with Connection(
             host_data.get("host_string"),
             connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        pkg.copy_packages(cvm)
+    ) as c_agw:
+        pkg.copy_packages(c_agw)
 
 
 @task
@@ -200,19 +204,19 @@ def s1ap_setup_cloud(c):
     with Connection(
         host=host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        connect_gateway_to_cloud(cvm, None, DEFAULT_CERT)
+    ) as c_agw:
+        connect_gateway_to_cloud(c_agw, None, DEFAULT_CERT)
 
         # Update the gateway's streamer timeout and restart services
-        cvm.run("sudo mkdir -p /var/opt/magma/configs")
-        _set_service_config_var(cvm, 'streamer', 'reconnect_sec', 3)
+        c_agw.run("sudo mkdir -p /var/opt/magma/configs")
+        _set_service_config_var(c_agw, 'streamer', 'reconnect_sec', 3)
 
         # Update the gateway's metricsd collect/sync intervals
-        _set_service_config_var(cvm, 'metricsd', 'collect_interval', 5)
-        _set_service_config_var(cvm, 'metricsd', 'sync_interval', 5)
+        _set_service_config_var(c_agw, 'metricsd', 'collect_interval', 5)
+        _set_service_config_var(c_agw, 'metricsd', 'sync_interval', 5)
 
-        cvm.run("sudo systemctl stop magma@*")
-        cvm.run("sudo systemctl restart magma@magmad")
+        c_agw.run("sudo systemctl stop magma@*")
+        c_agw.run("sudo systemctl restart magma@magmad")
 
 
 @task
@@ -235,19 +239,19 @@ def open_orc8r_port_in_vagrant(c):
     c.run(f"{cmd_yes_if_exists} || ({cmd_insert_line})")
 
 
-def _redirect_feg_agw_to_vagrant_orc8r(c):
+def _redirect_feg_agw_to_vagrant_orc8r(c_agw):
     """
     Modifies feg docker-compose.override.yml hosts and AGW /etc/hosts
     to point to localhost when Orc8r runs inside Vagrant
     """
     # This is only run in CI:
     # on macos
-    c.local(
+    c_agw.local(
         f"sed -i '' 's/:10.0.2.2/:127.0.0.1/' "
         f"{FEG_INTEG_TEST_DOCKER_ROOT}/docker-compose.override.yml",
     )
     # on ubuntu
-    c.sudo("sed -i 's/10.0.2.2/127.0.0.1/' '/etc/hosts'")
+    c_agw.sudo("sed -i 's/10.0.2.2/127.0.0.1/' '/etc/hosts'")
 
 
 @task
@@ -271,8 +275,8 @@ def federated_integ_test(
         with Connection(
             host=host_data.get("host_string"),
             connect_kwargs={"key_filename": host_data.get("key_filename")},
-        ) as cvm:
-            _redirect_feg_agw_to_vagrant_orc8r(cvm)
+        ) as c_agw:
+            _redirect_feg_agw_to_vagrant_orc8r(c_agw)
 
     with c.cd(FEG_INTEG_TEST_ROOT):
         c.run(start_all_cmd)
@@ -297,8 +301,8 @@ def federated_integ_test(
     with Connection(
         test_host_data.get("host_string"),
         connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as cvm:
-        _make_integ_tests(cvm)
+    ) as c_test:
+        _make_integ_tests(c_test)
     sleep(20)
     # run this on the host, not on the vm, as it will connect to the vm via ssh
     _run_integ_tests(c, test_host_data, test_mode="federated_integ_test")
@@ -318,7 +322,7 @@ def _run_build_all(c, clear_orc8r, orc8r_on_vagrant, provision_vm):
 
 @task
 def provision_magma_dev_vm(
-    c, gateway_host=None, destroy_vm=True, provision_vm=True,
+    c, gateway_host=None, destroy_vm=False, provision_vm=False,
 ):
     """
     Prepare to run the integration tests on the bazel build services.
@@ -393,9 +397,9 @@ def integ_test(
         gateway_host_data.get("host_string"),
         connect_kwargs={"key_filename": gateway_host_data.get("key_filename")},
         inline_ssh_env=True,
-    ) as cvm:
-        _build_magma(cvm)
-        _start_gateway(cvm)
+    ) as c_agw:
+        _build_magma(c_agw)
+        _start_gateway(c_agw)
 
     # Set up the trfserver: use the provided trfserver if given, else default to the
     # vagrant machine
@@ -406,8 +410,8 @@ def integ_test(
     with Connection(
         trf_host_data.get("host_string"),
         connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-    ) as cvm:
-        _start_trfserver(cvm)
+    ) as c_trf:
+        _start_trfserver(c_trf)
 
     # Run the tests: use the provided test machine if given, else default to
     # the vagrant machine
@@ -418,8 +422,8 @@ def integ_test(
     with Connection(
         test_host_data.get("host_string"),
         connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as cvm:
-        _make_integ_tests(cvm)
+    ) as c_test:
+        _make_integ_tests(c_test)
     # run this on the host, not on the vm, as it will connect to the vm via ssh
     _run_integ_tests(c, test_host_data, gateway_ip=gateway_ip)
 
@@ -456,8 +460,8 @@ def integ_test_deb_installation(
     with Connection(
         gateway_host_data.get("host_string"),
         connect_kwargs={"key_filename": gateway_host_data.get("key_filename")},
-    ) as cvm:
-        _start_gateway(cvm)
+    ) as c_agw:
+        _start_gateway(c_agw)
 
     # Set up the trfserver: use the provided trfserver if given, else default to the
     # vagrant machine
@@ -468,8 +472,8 @@ def integ_test_deb_installation(
     with Connection(
         trf_host_data.get("host_string"),
         connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-    ) as cvm:
-        _start_trfserver(cvm)
+    ) as c_trf:
+        _start_trfserver(c_trf)
 
     # Run the tests: use the provided test machine if given, else default to
     # the vagrant machine
@@ -480,8 +484,8 @@ def integ_test_deb_installation(
     with Connection(
         test_host_data.get("host_string"),
         connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as cvm:
-        _make_integ_tests(cvm)
+    ) as c_test:
+        _make_integ_tests(c_test)
 
     # run this on the host, not on the vm, as it will connect to the vm via ssh
     _run_integ_tests(c, test_host_data, gateway_ip=gateway_ip)
@@ -492,7 +496,7 @@ def integ_test_containerized(
         c, gateway_host=None, test_host=None, trf_host=None,
         destroy_vm=False, provision_vm=False,
         test_mode='integ_test_containerized',
-        tests='',
+        tests='', docker_registry=None,
 ):
     """
     Run the integration tests against the containerized AGW.
@@ -508,8 +512,8 @@ def integ_test_containerized(
     with Connection(
         gateway_host_data.get("host_string"),
         connect_kwargs={"key_filename": gateway_host_data.get("key_filename")},
-    ) as cvm:
-        _start_gateway_containerized(cvm)
+    ) as c_agw:
+        _start_gateway_containerized(c_agw, docker_registry)
 
     # Set up the trfserver: use the provided trfserver if given, else default to the
     # vagrant machine
@@ -520,8 +524,8 @@ def integ_test_containerized(
     with Connection(
         trf_host_data.get("host_string"),
         connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-    ) as cvm:
-        _start_trfserver(cvm)
+    ) as c_trf:
+        _start_trfserver(c_trf)
 
     # Run the tests: use the provided test machine if given, else default to
     # the vagrant machine
@@ -532,49 +536,47 @@ def integ_test_containerized(
     with Connection(
         test_host_data.get("host_string"),
         connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as cvm:
-        _make_integ_tests(cvm)
+    ) as c_test:
+        _make_integ_tests(c_test)
     # run this on the host, not on the vm, as it will connect to the vm via ssh
     _run_integ_tests(c, test_host_data, gateway_ip=gateway_ip, test_mode=test_mode, tests=tests)
 
 
-def _start_gateway_containerized(c):
+def _start_gateway_containerized(c_agw, docker_registry=None):
     """ Starts the containerized AGW """
-    with c.cd(AGW_PYTHON_ROOT):
-        c.run('make buildenv')
+    with c_agw.cd(AGW_PYTHON_ROOT):
+        c_agw.run('make buildenv')
 
-    with c.cd(AGW_ROOT):
-        c.run(
+    with c_agw.cd(AGW_ROOT):
+        c_agw.run(
             'for component in redis nghttpx td-agent-bit; do cp "${MAGMA_ROOT}"'
             '/{orc8r,lte}/gateway/configs/templates/${component}.conf.template;'
             ' done',
         )
 
-    c.run('sudo systemctl start magma_dp@envoy')
+    c_agw.run('sudo systemctl start magma_dp@envoy')
 
-    with c.cd(AGW_ROOT + "/docker"):
+    with c_agw.cd(AGW_ROOT + "/docker"):
         # The `docker-compose up` times are machine dependent, such that a retry is needed here for resilience.
-        with open("/tmp/docker_registry", "r") as f:
-            docker_registry = f.read()
         run_with_retry(
-            c, f'DOCKER_REGISTRY={docker_registry} docker compose'
-               f' --compatibility -f docker-compose.yaml up -d --quiet-pull',
+            c_agw, f'DOCKER_REGISTRY={docker_registry} docker compose'
+            f' --compatibility -f docker-compose.yaml up -d --quiet-pull',
         )
 
 
 @task
-def run_with_retry(c, command, retries=10):
+def run_with_retry(c_agw, command, retries=10):
     iteration = 0
     while iteration < retries:
         iteration += 1
         try:
-            c.run(command)
+            c_agw.run(command)
             break
         except:
             print(f"ERROR: Failed on retry {iteration} of \n$ {command}\n")
             sleep(3)
     else:
-        c.run("docker ps")  # It is _not_ docker compose by intention to see the container ID.
+        c_agw.run("docker ps")  # It is _not_ docker compose by intention to see the container ID.
         raise Exception(f"ERROR: Failed after {retries} retries of \n$ {command}")
 
 
@@ -601,12 +603,12 @@ def _get_test_summaries_from_vm(c, dst_path, vm_name):
     with Connection(
             host_data.get("host_string"),
             connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        if exists(cvm, results_dir + '/' + results_folder):
+    ) as c_agw:
+        if exists(c_agw, results_dir + '/' + results_folder):
             # Fix the permissions on the files -- they have permissions 000
             # otherwise
-            cvm.sudo(f'chmod 755 {results_dir}{results_folder}')
-            _get_folder(cvm, results_folder, results_dir, dst_path)
+            c_agw.sudo(f'chmod 755 {results_dir}{results_folder}')
+            _get_folder(c_agw, results_folder, results_dir, dst_path)
 
 
 @task
@@ -683,31 +685,31 @@ def _get_files_from_vm(c, host, vm_name, files, logs_location):
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
+    ) as c_vm:
         for p in files:
-            if exists(cvm, p):
+            if exists(c_vm, p):
                 # Fix the permissions on the files -- they have permissions 000
                 # otherwise
-                cvm.sudo(f'chmod 755 {p}')
+                c_vm.sudo(f'chmod 755 {p}')
                 if p[-1] == '/':
                     folder = p.split('/')[-2]
                     path = p.split(folder)[0]
-                    _get_folder(cvm, folder, path, logs_location)
+                    _get_folder(c_vm, folder, path, logs_location)
                 else:
-                    cvm.get(p, local=f"{logs_location}/{p}")
+                    c_vm.get(p, local=f"{logs_location}/{p}")
 
 
-def _get_folder(c, folder_name, remote_path, local_path):
+def _get_folder(c_vm, folder_name, remote_path, local_path):
     """
     Get a folder from the remote machine to the local machine
     """
-    with c.cd(remote_path):
-        c.run(f'tar -czvf /tmp/{folder_name}.tar.gz {folder_name}')
-    c.get(f'/tmp/{folder_name}.tar.gz', local=f'{local_path}/{folder_name}.tar.gz')
-    c.run(f'rm /tmp/{folder_name}.tar.gz')
-    c.local(f'sudo tar -xzf {local_path}/{folder_name}.tar.gz -C {local_path}')
-    c.local(f'sudo chmod 755 {local_path}/{folder_name}')
-    c.local(f'sudo rm {local_path}/{folder_name}.tar.gz')
+    with c_vm.cd(remote_path):
+        c_vm.run(f'tar -czvf /tmp/{folder_name}.tar.gz {folder_name}')
+    c_vm.get(f'/tmp/{folder_name}.tar.gz', local=f'{local_path}/{folder_name}.tar.gz')
+    c_vm.run(f'rm /tmp/{folder_name}.tar.gz')
+    c_vm.local(f'sudo tar -xzf {local_path}/{folder_name}.tar.gz -C {local_path}')
+    c_vm.local(f'sudo chmod 755 {local_path}/{folder_name}')
+    c_vm.local(f'sudo rm {local_path}/{folder_name}.tar.gz')
 
 
 @task
@@ -729,10 +731,10 @@ def build_and_start_magma(c, destroy_vm=False, provision_vm=False):
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
         inline_ssh_env=True,
-    ) as cvm:
-        cvm.sudo('service magma@* stop')
-        _build_magma(cvm)
-        cvm.sudo('service magma@magmad start')
+    ) as c_agw:
+        c_agw.sudo('service magma@* stop')
+        _build_magma(c_agw)
+        c_agw.sudo('service magma@magmad start')
 
 
 @task
@@ -743,8 +745,8 @@ def make_integ_tests(c, destroy_vm=False, provision_vm=False):
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        _make_integ_tests(cvm)
+    ) as c_test:
+        _make_integ_tests(c_test)
 
 
 @task
@@ -755,8 +757,8 @@ def build_and_start_magma_trf(c, destroy_vm=False, provision_vm=False):
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        _start_trfserver(cvm)
+    ) as c_trf:
+        _start_trfserver(c_trf)
 
 
 @task
@@ -767,8 +769,8 @@ def start_magma(c, destroy_vm=False, provision_vm=False):
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        cvm.sudo('service magma@magmad start')
+    ) as c_agw:
+        c_agw.sudo('service magma@magmad start')
 
 
 @task
@@ -783,65 +785,65 @@ def build_test_vms(c, provision_vm=False, destroy_vm=False):
     with Connection(
         test_host_data.get("host_string"),
         connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as cvm:
-        _make_integ_tests(cvm)
+    ) as c_test:
+        _make_integ_tests(c_test)
 
 
-def _copy_out_c_execs_in_magma_vm(c):
+def _copy_out_c_execs_in_magma_vm(c_agw):
     exec_paths = [
         '/usr/local/bin/sessiond', '/usr/local/bin/mme',
         '/usr/local/sbin/sctpd', '/usr/local/bin/connectiond',
         '/usr/local/bin/liagentd',
     ]
     dest_path = '~/magma-packages/executables'
-    c.run('mkdir -p ' + dest_path, warn=True)
+    c_agw.run('mkdir -p ' + dest_path, warn=True)
     for exec_path in exec_paths:
-        if not exists(c, exec_path):
+        if not exists(c_agw, exec_path):
             print(exec_path + " does not exist")
             continue
-        c.run('cp ' + exec_path + ' ' + dest_path, warn=True)
+        c_agw.run('cp ' + exec_path + ' ' + dest_path, warn=True)
 
 
-def _build_magma(c):
+def _build_magma(c_agw):
     """
     Build magma on AGW
     """
-    with c.cd(AGW_ROOT):
-        c.run(
+    with c_agw.cd(AGW_ROOT):
+        c_agw.run(
             env={'PATH': '$PATH:/usr/local/go/bin:/home/vagrant/go/bin'},
             command='make',
         )
 
 
-def _start_gateway(c):
+def _start_gateway(c_agw):
     """ Starts the gateway """
-    c.run('sudo service magma@magmad start')
+    c_agw.run('sudo service magma@magmad start')
 
 
-def _set_service_config_var(c, service, var_name, value):
+def _set_service_config_var(c_agw, service, var_name, value):
     """ Sets variable in config file by value """
-    c.run(
+    c_agw.run(
         f"echo '{var_name}: {str(value)}'"
         f" | sudo tee -a /var/opt/magma/configs/{service}.yml",
     )
 
 
-def _start_trfserver(c):
+def _start_trfserver(c_trf):
     """ Starts the traffic gen server"""
 
-    c.run('sudo ethtool --offload eth1 rx off tx off')
-    c.run('sudo ethtool --offload eth2 rx off tx off')
+    c_trf.run('sudo ethtool --offload eth1 rx off tx off')
+    c_trf.run('sudo ethtool --offload eth2 rx off tx off')
     trf_cmd = 'nohup /usr/local/bin/traffic_server.py 192.168.60.144 62462 > trfserver.log 2>&1'
-    c.sudo('apt-get install -y dtach')
-    c.sudo(f"dtach -n `mktemp -u /tmp/dtach.XXXX` {trf_cmd}")
+    c_trf.sudo('apt-get install -y dtach')
+    c_trf.sudo(f"dtach -n `mktemp -u /tmp/dtach.XXXX` {trf_cmd}")
 
 
-def _make_integ_tests(c):
+def _make_integ_tests(c_test):
     """ Build the integration tests """
-    with c.cd(AGW_PYTHON_ROOT):
-        c.run('make')
-    with c.cd(AGW_INTEG_ROOT):
-        c.run('make')
+    with c_test.cd(AGW_PYTHON_ROOT):
+        c_test.run('make')
+    with c_test.cd(AGW_INTEG_ROOT):
+        c_test.run('make')
 
 
 def _run_integ_tests(

@@ -68,41 +68,41 @@ def get_commit_count(c: Connection):
     return c.run('git rev-list --count HEAD').stdout.strip()
 
 
-def download_all_pkgs(c: Connection):
+def download_all_pkgs(c_agw: Connection):
     '''
     Figure out the list of installed packages on the system and download the
     packages locally into the apt cache
     '''
     # Get a list of all the installed packages
-    packages = c.run(
+    packages = c_agw.run(
         'dpkg-query -l'
         ' | tail -n +6'
         ' | awk \'{print $2}\''
         ' | sed "s/:.*$//"',
     )
     # Get the list of the packages we have local .debs for
-    have_pkgs = c.run(
+    have_pkgs = c_agw.run(
         'ls /var/cache/apt/archives/*.deb'
         ' | xargs -I "%" dpkg -I "%"'
         ' | grep " Package: "'
         ' | awk \'{print $2}\'',
     )
     # Figure out the set difference of the two
-    have_not_pkgs = c.run(
+    have_not_pkgs = c_agw.run(
         'echo \'' + packages + "\n" + have_pkgs + '\''
         ' | sort'
         ' | uniq -u'
         ' | tr "\\n\\r" " "',
     )
     # Download all the packages we don't have
-    with c.cd('/var/cache/apt/archives'):
+    with c_agw.cd('/var/cache/apt/archives'):
         for p in have_not_pkgs.split():
             # Some of the packages aren't available on the repo, so
             # download them one at a time so we can swallow errors
-            c.run(f'sudo aptitude download -q2 {p} || true')
+            c_agw.run(f'sudo aptitude download -q2 {p} || true')
 
 
-def upload_pkgs_to_aws(c: Connection):
+def upload_pkgs_to_aws(c_agw: Connection):
     """
     Upload the dependencies in the apt cache to aws. This allows us to record
     and retrieve the versions of the dependencies a specific version of magma
@@ -121,20 +121,20 @@ def upload_pkgs_to_aws(c: Connection):
     """
 
     # Get the version of magma we are releasing
-    magma_version = get_magma_version(c)
-    copy_packages(c)
+    magma_version = get_magma_version(c_agw)
+    copy_packages(c_agw)
 
     # Upload to AWS
     s3_path = 's3://magma-images/gateway/' + magma_version
-    c.run('aws s3 cp /tmp/packages.txt ' + s3_path + '.deplist')
-    c.run('aws s3 cp release/magma.lockfile.debian ' + s3_path + '.lockfile.debian')
-    c.run('aws s3 cp /tmp/packages.tar.gz ' + s3_path + '.deps.tar.gz')
+    c_agw.run('aws s3 cp /tmp/packages.txt ' + s3_path + '.deplist')
+    c_agw.run('aws s3 cp release/magma.lockfile.debian ' + s3_path + '.lockfile.debian')
+    c_agw.run('aws s3 cp /tmp/packages.tar.gz ' + s3_path + '.deps.tar.gz')
 
     # Clean up
-    c.run('rm -r /tmp/packages')
-    c.run('rm /tmp/packages.tar.gz')
-    c.run('rm /tmp/packages.tar.gz')
-    c.run('rm /tmp/packages.txt')
+    c_agw.run('rm -r /tmp/packages')
+    c_agw.run('rm /tmp/packages.tar.gz')
+    c_agw.run('rm /tmp/packages.tar.gz')
+    c_agw.run('rm /tmp/packages.txt')
 
 
 def get_magma_version(c: Connection):

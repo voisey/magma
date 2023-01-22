@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import jsonpickle
 import requests
-from fabric import Connection, task
+from fabric import Connection
 from tools.fab import types, vagrant
 
 AGW_ROOT = "$MAGMA_ROOT/lte/gateway"
@@ -199,8 +199,8 @@ def get_gateway_hardware_id_from_vagrant(c: Connection, vm_name: str) -> str:
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        hardware_id = cvm.run('cat /etc/snowflake', hide=True).stdout
+    ) as c_agw:
+        hardware_id = c_agw.run('cat /etc/snowflake', hide=True).stdout
     return str(hardware_id).strip()
 
 
@@ -219,9 +219,9 @@ def get_gateway_hardware_id_from_docker(c: Connection, location_docker_compose: 
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        with cvm.cd(location_docker_compose):
-            hardware_id = cvm.run(
+    ) as c_agw:
+        with c_agw.cd(location_docker_compose):
+            hardware_id = c_agw.run(
                 'docker compose exec magmad bash -c "cat /etc/snowflake"',
                 hide=True,
             ).stdout
@@ -241,10 +241,10 @@ def delete_gateway_certs_from_vagrant(c: Connection, vm_name: str):
         with Connection(
             host=host_data.get("host_string"),
             connect_kwargs={"key_filename": host_data.get("key_filename")},
-        ) as cvm:
-            with cvm.cd('/var/opt/magma/certs'):
-                cvm.sudo('rm gateway.*', hide=True, warn=True)
-                cvm.sudo('rm gw_challenge.key', hide=True, warn=True)
+        ) as c_agw:
+            with c_agw.cd('/var/opt/magma/certs'):
+                c_agw.sudo('rm gateway.*', hide=True, warn=True)
+                c_agw.sudo('rm gw_challenge.key', hide=True, warn=True)
 
 
 def delete_gateway_certs_from_docker(c: Connection, location_docker_compose: str):
@@ -260,15 +260,15 @@ def delete_gateway_certs_from_docker(c: Connection, location_docker_compose: str
         with Connection(
             host_data.get("host_string"),
             connect_kwargs={"key_filename": host_data.get("key_filename")},
-        ) as cvm:
-            with cvm.cd(FEG_INTEG_TEST_ROOT + location_docker_compose):
-                cvm.run('echo "delete_feg_certs is running on directory $PWD"')
-                cvm.run(
+        ) as c_agw:
+            with c_agw.cd(FEG_INTEG_TEST_ROOT + location_docker_compose):
+                c_agw.run('echo "delete_feg_certs is running on directory $PWD"')
+                c_agw.run(
                     'docker compose exec -t magmad bash -c '
                     '"rm -f /var/opt/magma/certs/gateway.*"',
                     warn=True,
                 )
-                cvm.run(
+                c_agw.run(
                     'docker compose exec -t magmad bash -c '
                     '"rm -f /var/opt/magma/certs/gw_challenge.key"',
                     warn=True,
@@ -310,7 +310,7 @@ def is_hw_id_registered(
 
 
 def connect_gateway_to_cloud(
-        c: Connection,
+        c_agw: Connection,
         control_proxy_setting_path: str,
         cert_path: str,
 ):
@@ -320,22 +320,22 @@ def connect_gateway_to_cloud(
     non-default control proxy setting and certificates
     """
     # Add the override for the production endpoints
-    c.sudo("rm -rf /var/opt/magma/configs")
-    c.sudo("mkdir /var/opt/magma/configs")
+    c_agw.sudo("rm -rf /var/opt/magma/configs")
+    c_agw.sudo("mkdir /var/opt/magma/configs")
     if control_proxy_setting_path is not None:
-        c.sudo(
+        c_agw.sudo(
             "cp " + control_proxy_setting_path
             + " /var/opt/magma/configs/control_proxy.yml",
         )
 
     # Copy certs which will be used by the bootstrapper
-    c.sudo("rm -rf /var/opt/magma/certs")
-    c.sudo("mkdir /var/opt/magma/certs")
-    c.sudo("cp " + cert_path + " /var/opt/magma/certs/")
+    c_agw.sudo("rm -rf /var/opt/magma/certs")
+    c_agw.sudo("mkdir /var/opt/magma/certs")
+    c_agw.sudo("cp " + cert_path + " /var/opt/magma/certs/")
 
     # Restart the bootstrapper in the gateway to use the new certs
-    c.sudo("systemctl stop magma@*")
-    c.sudo("systemctl restart magma@magmad")
+    c_agw.sudo("systemctl stop magma@*")
+    c_agw.sudo("systemctl restart magma@magmad")
 
 
 def cloud_get(

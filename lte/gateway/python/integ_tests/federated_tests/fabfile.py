@@ -108,9 +108,9 @@ def _run_orc8r_command(c, command, on_vagrant):
             with Connection(
                     host_data.get("host_string"),
                     connect_kwargs={"key_filename": host_data.get("key_filename")},
-            ) as cvm:
-                with cvm.cd(orc8r_vagrant_path):
-                    cvm.run(command)
+            ) as c_agw:
+                with c_agw.cd(orc8r_vagrant_path):
+                    c_agw.run(command)
 
 
 @task
@@ -129,11 +129,11 @@ def configure_orc8r(c, on_vagrant=False):
         with Connection(
             host_data.get("host_string"),
             connect_kwargs={"key_filename": host_data.get("key_filename")},
-        ) as cvm:
-            with cvm.cd(agw_vagrant_path):
-                cvm.run(command_agw)
-            with cvm.cd(feg_vagrant_path):
-                cvm.run(command_feg)
+        ) as c_agw:
+            with c_agw.cd(agw_vagrant_path):
+                c_agw.run(command_agw)
+            with c_agw.cd(feg_vagrant_path):
+                c_agw.run(command_feg)
 
 
 @task
@@ -210,11 +210,11 @@ def build_feg(c):
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        with cvm.cd(feg_docker_integ_test_path_vagrant):
-            cvm.run('docker compose down')
-            cvm.run('docker compose --compatibility build')
-            cvm.run('./run.py')
+    ) as c_agw:
+        with c_agw.cd(feg_docker_integ_test_path_vagrant):
+            c_agw.run('docker compose down')
+            c_agw.run('docker compose --compatibility build')
+            c_agw.run('./run.py')
 
 
 def _build_feg_on_host(c):
@@ -245,9 +245,9 @@ def start_feg(c):
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        with cvm.cd(feg_docker_integ_test_path_vagrant):
-            cvm.run('./run.py')
+    ) as c_agw:
+        with c_agw.cd(feg_docker_integ_test_path_vagrant):
+            c_agw.run('./run.py')
 
 
 def _start_feg_on_host(c):
@@ -266,9 +266,9 @@ def stop_feg(c):
     stop FEG on magma Vagrant vm using docker running in Vagrant
     """
     host_data = vagrant_setup(c, 'magma', destroy_vm=False)
-    with Connection(host_data.get("host_string")) as cvm:
-        with cvm.cd(feg_docker_integ_test_path_vagrant):
-            cvm.run('docker compose down')
+    with Connection(host_data.get("host_string")) as c_agw:
+        with c_agw.cd(feg_docker_integ_test_path_vagrant):
+            c_agw.run('docker compose down')
 
 
 def _stop_feg_on_host(c):
@@ -345,10 +345,10 @@ def test_connectivity(c, timeout=10):
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as cvm:
-        with cvm.cd(feg_docker_integ_test_path_vagrant):
+    ) as c_agw:
+        with c_agw.cd(feg_docker_integ_test_path_vagrant):
             dev_utils.run_remote_command_with_repetition(
-                cvm, 'docker compose exec -t magmad checkin_cli.py', timeout,
+                c_agw, 'docker compose exec -t magmad checkin_cli.py', timeout,
             )
 
     # check AGW-FEG connectivity
