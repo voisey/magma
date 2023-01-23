@@ -489,10 +489,10 @@ def integ_test_deb_installation(
 
 @task
 def integ_test_containerized(
-        c, gateway_host=None, test_host=None, trf_host=None,
-        destroy_vm=False, provision_vm=False,
-        test_mode='integ_test_containerized',
-        tests='', docker_registry=None,
+    c, gateway_host=None, test_host=None, trf_host=None,
+    destroy_vm=False, provision_vm=False,
+    test_mode='integ_test_containerized',
+    tests='', docker_registry=None,
 ):
     """
     Run the integration tests against the containerized AGW.
@@ -553,7 +553,8 @@ def _start_gateway_containerized(c_agw, docker_registry=None):
     c_agw.run('sudo systemctl start magma_dp@envoy')
 
     with c_agw.cd(AGW_ROOT + "/docker"):
-        # The `docker-compose up` times are machine dependent, such that a retry is needed here for resilience.
+        # The `docker-compose up` times are machine dependent, such that a
+        # retry is needed here for resilience.
         run_with_retry(
             c_agw, f'DOCKER_REGISTRY={docker_registry} docker compose'
             f' --compatibility -f docker-compose.yaml up -d --quiet-pull',
