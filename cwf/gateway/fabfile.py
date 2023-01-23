@@ -16,7 +16,6 @@ import time
 from enum import Enum
 
 from fabric import Connection, task
-from patchwork.files import exists
 
 sys.path.append('../../orc8r')
 from tools.fab.hosts import ansible_setup, vagrant_setup
@@ -131,9 +130,8 @@ def integ_test(
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-        inline_ssh_env=True,
     ) as c_cwf:
-        if exists(c_cwf, "/var/opt/magma/cores/"):
+        if c_cwf.run("test -e /var/opt/magma/cores", warn=True).ok:
             c_cwf.run("sudo rm /var/opt/magma/cores/*", warn=True, hide='err')
         else:
             c_cwf.run("sudo mkdir -p /var/opt/magma/cores", warn=True)
@@ -201,7 +199,6 @@ def integ_test(
     with Connection(
         test_host_data.get("host_string"),
         connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-        inline_ssh_env=True,
     ) as c_test:
         _start_ue_simulator(c_test)
         _set_cwag_test_networking(c_test, cwag_br_mac)
@@ -506,7 +503,6 @@ def _run_integ_tests(
     with Connection(
         host=host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-        inline_ssh_env=True,
     ) as c_cwf:
         with c_cwf.cd(CWAG_INTEG_ROOT):
             result = c_cwf.run(env=shell_env_vars, command=go_test_cmd, warn=True)

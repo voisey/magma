@@ -14,8 +14,6 @@ limitations under the License.
 import sys
 from time import sleep
 
-from patchwork.files import exists
-
 sys.path.append('../../orc8r')
 import tools.fab.pkg as pkg
 # import fab tasks from dev_tools, so they can be called via fab in the command line
@@ -95,7 +93,6 @@ def package(
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-        inline_ssh_env=True,
     ) as c_agw:
         print('Uninstalling dev dependencies of the VM')
         c_agw.run('sudo pip uninstall --yes mypy-protobuf grpcio-tools grpcio protobuf')
@@ -396,7 +393,6 @@ def integ_test(
     with Connection(
         gateway_host_data.get("host_string"),
         connect_kwargs={"key_filename": gateway_host_data.get("key_filename")},
-        inline_ssh_env=True,
     ) as c_agw:
         _build_magma(c_agw)
         _start_gateway(c_agw)
@@ -604,7 +600,9 @@ def _get_test_summaries_from_vm(c, dst_path, vm_name):
             host_data.get("host_string"),
             connect_kwargs={"key_filename": host_data.get("key_filename")},
     ) as c_agw:
-        if exists(c_agw, results_dir + '/' + results_folder):
+        if c_agw.run(
+            f"test -e {c_agw, results_dir + '/' + results_folder}", warn=True,
+        ).ok:
             # Fix the permissions on the files -- they have permissions 000
             # otherwise
             c_agw.sudo(f'chmod 755 {results_dir}{results_folder}')
@@ -687,7 +685,7 @@ def _get_files_from_vm(c, host, vm_name, files, logs_location):
         connect_kwargs={"key_filename": host_data.get("key_filename")},
     ) as c_vm:
         for p in files:
-            if exists(c_vm, p):
+            if c_vm.run(f"test -e {p}", warn=True).ok:
                 # Fix the permissions on the files -- they have permissions 000
                 # otherwise
                 c_vm.sudo(f'chmod 755 {p}')
@@ -730,7 +728,6 @@ def build_and_start_magma(c, destroy_vm=False, provision_vm=False):
     with Connection(
         host_data.get("host_string"),
         connect_kwargs={"key_filename": host_data.get("key_filename")},
-        inline_ssh_env=True,
     ) as c_agw:
         c_agw.sudo('service magma@* stop')
         _build_magma(c_agw)
@@ -798,7 +795,7 @@ def _copy_out_c_execs_in_magma_vm(c_agw):
     dest_path = '~/magma-packages/executables'
     c_agw.run('mkdir -p ' + dest_path, warn=True)
     for exec_path in exec_paths:
-        if not exists(c_agw, exec_path):
+        if not c_agw.run(f"test -e {exec_path}", warn=True).ok:
             print(exec_path + " does not exist")
             continue
         c_agw.run('cp ' + exec_path + ' ' + dest_path, warn=True)

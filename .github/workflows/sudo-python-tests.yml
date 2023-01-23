@@ -47,7 +47,7 @@ jobs:
       - name: Install pre requisites
         run: |
           pip3 install --upgrade pip
-          pip3 install ansible fabric jsonpickle patchwork requests PyYAML firebase_admin
+          pip3 install ansible fabric jsonpickle requests PyYAML firebase_admin
           vagrant plugin install vagrant-vbguest vagrant-disksize vagrant-reload
       - name: Open up network interfaces for VM
         run: |

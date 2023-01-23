@@ -49,7 +49,6 @@ This VM runs an iperf3 server.
 #### Requirements
 
 - fabric
-- patchwork
 - see <https://magma.github.io/magma/docs/basics/prerequisites> for
 our prerequisites on running our VMs.
 

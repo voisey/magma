@@ -89,7 +89,7 @@ jobs:
       - name: Install pre requisites
         run: |
           pip3 install --upgrade pip
-          pip3 install ansible fabric jsonpickle patchwork PyYAML requests
+          pip3 install ansible fabric jsonpickle PyYAML requests
           vagrant plugin install vagrant-vbguest vagrant-disksize vagrant-reload
       - name: Open up network interfaces for VM
         run: |
