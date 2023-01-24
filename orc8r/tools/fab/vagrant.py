@@ -12,6 +12,7 @@ limitations under the License.
 """
 import os
 import os.path
+from typing import Dict, Tuple
 
 from fabric import Connection
 
@@ -31,7 +32,7 @@ def _ensure_in_vagrant_dir(c: Connection) -> None:
 
 def setup_env_vagrant(
     c: Connection, machine: str = 'magma', force_provision: bool = False,
-) -> dict:
+) -> Tuple[Connection, Dict[str, str]]:
     """ Host config for local Vagrant VM.
 
     Sets the environment to point at the local vagrant machine. Used
@@ -77,7 +78,9 @@ def setup_env_vagrant(
     identity_file = ssh_params.get("IdentityFile", "").strip().strip('"')
     host_string = f'vagrant@{host}:{port}'
 
-    return {
+    return Connection(
+        host_string, connect_kwargs={"key_filename": identity_file},
+    ), {
         "host_string": host_string,
         "key_filename": identity_file,
     }

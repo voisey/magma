@@ -21,7 +21,7 @@ from fabric import Connection, task
 sys.path.append('../../orc8r')
 import tools.fab.dev_utils as dev_utils
 import tools.fab.types as types
-from tools.fab.vagrant import setup_env_vagrant
+from tools.fab.hosts import vagrant_connection
 
 LTE_NETWORK_TYPE = 'lte'
 FEG_LTE_NETWORK_TYPE = 'feg_lte'
@@ -70,7 +70,8 @@ def register_vm(c):
     _register_agw(c, LTE_NETWORK_TYPE)
 
 
-def register_vm_remote(certs_dir: str, network_id: str, url: str):
+@task
+def register_vm_remote(c, certs_dir, network_id, url):
     """
     Register local VM gateway with remote controller.
 
@@ -182,13 +183,10 @@ def check_agw_cloud_connectivity(c, timeout=10):
         c: fabric connection
         timeout: amount of time the command will retry
     """
-    host_data = setup_env_vagrant(c, "magma", force_provision=False)
-    with Connection(
-        host_data.get('host_string'),
-        connect_kwargs={'key_filename': host_data.get('key_filename')},
-    ) as cvm:
-        with cvm.cd("/home/vagrant/build/python/bin/"):
-            dev_utils.run_remote_command_with_repetition(cvm, "./checkin_cli.py", timeout)
+    c_agw = vagrant_connection(c, "magma")
+    with c_agw:
+        with c_agw.cd("/home/vagrant/build/python/bin/"):
+            dev_utils.run_remote_command_with_repetition(c_agw, "./checkin_cli.py", timeout)
 
 
 @task
@@ -199,13 +197,10 @@ def check_agw_feg_connectivity(c, timeout=10):
         c: fabric connection
         timeout: amount of time the command will retry
     """
-    host_data = setup_env_vagrant(c, "magma", force_provision=False)
-    with Connection(
-        host_data.get('host_string'),
-        connect_kwargs={'key_filename': host_data.get('key_filename')},
-    ) as cvm:
-        with cvm.cd("/home/vagrant/build/python/bin/"):
-            dev_utils.run_remote_command_with_repetition(cvm, "./feg_hello_cli.py m 0", timeout)
+    c_agw = vagrant_connection(c, "magma")
+    with c_agw:
+        with c_agw.cd("/home/vagrant/build/python/bin/"):
+            dev_utils.run_remote_command_with_repetition(c_agw, "./feg_hello_cli.py m 0", timeout)
 
 
 def _register_network(network_type: str, payload: Any):

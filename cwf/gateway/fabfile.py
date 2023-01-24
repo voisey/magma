@@ -18,7 +18,7 @@ from enum import Enum
 from fabric import Connection, task
 
 sys.path.append('../../orc8r')
-from tools.fab.hosts import ansible_setup, vagrant_setup
+from tools.fab.hosts import ansible_setup, vagrant_setup, vagrant_connection
 
 CWAG_ROOT = "$MAGMA_ROOT/cwf/gateway"
 CWAG_INTEG_ROOT = "$MAGMA_ROOT/cwf/gateway/integ_tests"
@@ -116,7 +116,7 @@ def integ_test(
 
     # Setup the gateway: use the provided gateway if given, else default to the
     # vagrant machine
-    host_data = _set_up_vm(
+    c_cwf = _set_up_vm(
         c,
         gateway_host,
         gateway_vm,
@@ -127,10 +127,7 @@ def integ_test(
 
     # We will direct coredumps to be placed in this directory
     # Clean up before every run
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_cwf:
+    with c_cwf:
         if c_cwf.run("test -e /var/opt/magma/cores", warn=True).ok:
             c_cwf.run("sudo rm /var/opt/magma/cores/*", warn=True, hide='err')
         else:
@@ -156,19 +153,16 @@ def integ_test(
     # Setup the trfserver: use the provided trfserver if given, else default to
     # the vagrant machine
     with c.cd(LTE_AGW_ROOT):
-        trf_host_data = _set_up_vm(
+        c_trf, _ = _set_up_vm(
             c, gateway_host, "magma_trfserver",
             "magma_trfserver.yml", destroy_vm, provision_vm,
         )
-        with Connection(
-            trf_host_data.get("host_string"),
-            connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-        ) as c_trf:
+        with c_trf:
             _start_trfserver(c_trf)
 
     # Run the tests: use the provided test machine if given, else default to
     # the vagrant machine
-    test_host_data = _set_up_vm(
+    c_test = _set_up_vm(
         c,
         gateway_host,
         "cwag_test",
@@ -176,30 +170,21 @@ def integ_test(
         destroy_vm,
         provision_vm,
     )
-    with Connection(
-        test_host_data.get("host_string"),
-        connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as c_test:
+    with c_test:
         cwag_test_br_mac = _get_br_mac(c_test, CWAG_TEST_BR_NAME)
         _set_cwag_test_configs(c_test)
         _set_cwag_configs(c_test, "gateway.mconfig")
         _start_ipfix_controller(c_test)
 
     # Get back to the gateway vm to setup static arp
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_cwf:
+    with c_cwf:
         _set_cwag_networking(c_cwf, cwag_test_br_mac)
 
         # check if docker services are alive except for OCS2 and PCRF2
         ignore_list = ["ocs2", "pcrf2"]
         _check_docker_services(c_cwf, ignore_list)
 
-    with Connection(
-        test_host_data.get("host_string"),
-        connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as c_test:
+    with c_test:
         _start_ue_simulator(c_test)
         _set_cwag_test_networking(c_test, cwag_br_mac)
 
@@ -215,17 +200,17 @@ def integ_test(
     if tests_to_run.value == SubTests.HSSLESS.value:
         _run_integ_tests(
             c, gateway_host, trf_host, tests_to_run, test_re, count,
-            test_result_xml, rerun_fails, host_data, trf_host_data,
+            test_result_xml, rerun_fails, c_cwf, c_trf,
         )
     else:
         _run_integ_tests(
             c, test_host, trf_host, tests_to_run, test_re, count,
-            test_result_xml, rerun_fails, test_host_data, trf_host_data,
+            test_result_xml, rerun_fails, c_test, c_trf,
         )
 
     if not test_host and not trf_host:
         # Clean up only for now when running locally
-        _clean_up(c, trf_host_data)
+        _clean_up(c, c_trf)
     print(f'Integration Test Passed for "{tests_to_run.value}"!')
     sys.exit(0)
 
@@ -247,11 +232,11 @@ def transfer_artifacts(
     services = services.strip().split(' ')
     print("Transferring logs for " + str(services))
 
-    host_data = _set_up_vm_no_destroy(c, None, gateway_vm, gateway_ansible_file)
-    with Connection(
-        host=host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_cwf:
+    c_cwf = _set_up_vm(
+        c, None, gateway_vm, gateway_ansible_file, destroy_vm=False,
+        provision_vm=False,
+    )
+    with c_cwf:
         with c_cwf.cd(CWAG_ROOT):
             for service in services:
                 c_cwf.run("docker logs -t " + service + " &> " + service + ".log")
@@ -273,13 +258,10 @@ def _tar_coredump(c_cwf):
 
 def _set_up_vm(c, addr, host_name, ansible_file, destroy_vm, provision_vm):
     if not addr:
-        return vagrant_setup(c, host_name, destroy_vm, provision_vm)
+        return vagrant_connection(c, host_name, destroy_vm, provision_vm)
     else:
-        return ansible_setup(c, addr, host_name, ansible_file)
-
-
-def _set_up_vm_no_destroy(c, addr, host_name, ansible_file):
-    return _set_up_vm(c, addr, host_name, ansible_file, False, False)
+        ansible_setup(c, addr, host_name, ansible_file)
+        return Connection(addr)
 
 
 def _transfer_docker_images(c_cwf, skip_docker_load, tar_path):
@@ -462,8 +444,8 @@ def _run_unit_tests(c_cwf):
     """ Run the cwag unit tests """
     with c_cwf.cd(CWAG_ROOT):
         c_cwf.run(
+            'make test',
             env={'PATH': '$PATH:/usr/local/go/bin:/home/vagrant/go/bin'},
-            command='make test',
         )
 
 
@@ -477,7 +459,7 @@ def _add_docker_host_remote_network_envvar(c_test):
 
 def _run_integ_tests(
     c, test_host, trf_host, tests_to_run: SubTests, test_re, count,
-    test_result_xml, rerun_fails, host_data, trf_host_data,
+    test_result_xml, rerun_fails, c_test_vm, c_trf,
 ):
     """ Run the integration tests """
     # add docker host environment as well
@@ -500,30 +482,24 @@ def _run_integ_tests(
     if test_re:
         go_test_cmd += " -run=" + test_re
 
-    with Connection(
-        host=host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_cwf:
-        with c_cwf.cd(CWAG_INTEG_ROOT):
-            result = c_cwf.run(env=shell_env_vars, command=go_test_cmd, warn=True)
+    with c_test_vm:
+        with c_test_vm.cd(CWAG_INTEG_ROOT):
+            result = c_test_vm.run(go_test_cmd, env=shell_env_vars, warn=True)
 
     if result.return_code != 0:
         if not test_host and not trf_host:
             # Clean up only for now when running locally
-            _clean_up(c, trf_host_data)
+            _clean_up(c, c_trf)
         print("Integration Test returned ", result.return_code)
         sys.exit(result.return_code)
 
 
-def _clean_up(c, trf_host_data):
+def _clean_up(c, c_trf):
     # already in cwag test vm at this point
     # Kill uesim service
     c.run('pkill go', warn=True)
     with c.cd(LTE_AGW_ROOT):
-        with Connection(
-            trf_host_data.get("host_string"),
-            connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-        ) as c_trf:
+        with c_trf:
             c_trf.run('pkill iperf3 > /dev/null &', pty=False, warn=True)
 
 

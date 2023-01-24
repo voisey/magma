@@ -19,8 +19,7 @@ import tools.fab.pkg as pkg
 # import fab tasks from dev_tools, so they can be called via fab in the command line
 from dev_tools import *
 from tools.fab.dev_utils import connect_gateway_to_cloud
-from tools.fab.hosts import ansible_setup, split_hoststring, vagrant_setup
-from tools.fab.vagrant import setup_env_vagrant
+from tools.fab.hosts import ansible_setup, split_hoststring, vagrant_setup, vagrant_connection
 
 """
 Magma Gateway packaging tool:
@@ -89,11 +88,8 @@ def package(
     hash = pkg.get_commit_hash(c)
     commit_count = pkg.get_commit_count(c)
 
-    host_data = vagrant_setup(c, vm, destroy_vm=destroy_vm)
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, vm, destroy_vm=destroy_vm)
+    with c_agw:
         print('Uninstalling dev dependencies of the VM')
         c_agw.run('sudo pip uninstall --yes mypy-protobuf grpcio-tools grpcio protobuf')
 
@@ -120,8 +116,8 @@ def package(
             # set '/usr/bin/' in PATH to ensure that the correct version of
             # python is used
             c_agw.run(
+                build_cmd,
                 env={'PATH': '/usr/bin:/usr/local/go/bin:/home/vagrant/go/bin:/usr/lib/ccache:$PATH'},
-                command=build_cmd,
             )
 
             c_agw.run('rm -rf ~/magma-packages')
@@ -154,11 +150,8 @@ def package(
 @task
 def openvswitch(c, destroy_vm=False, destdir='~/magma-packages/'):
     # If a host list isn't specified, default to the magma vagrant vm
-    host_data = vagrant_setup(c, 'magma', destroy_vm=destroy_vm)
-    with Connection(
-            host_data.get("host_string"),
-            connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, 'magma', destroy_vm=destroy_vm)
+    with c_agw:
         c_agw.run('~/magma/third_party/gtp_ovs/ovs-gtp-patches/2.15/build.sh ' + destdir)
 
 
@@ -166,32 +159,23 @@ def openvswitch(c, destroy_vm=False, destdir='~/magma-packages/'):
 def depclean(c):
     '''Remove all generated packaged for dependencies'''
     # If a host list isn't specified, default to the magma vagrant vm
-    host_data = setup_env_vagrant(c, 'magma')
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, 'magma')
+    with c_agw:
         c_agw.run('rm -rf ~/magma-deps')
 
 
 @task
 def upload_to_aws(c):
     # If a host list isn't specified, default to the magma vagrant vm
-    host_data = setup_env_vagrant(c, 'magma')
-    with Connection(
-            host_data.get("host_string"),
-            connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, 'magma')
+    with c_agw:
         pkg.upload_pkgs_to_aws(c_agw)
 
 
 @task
 def copy_packages(c):
-    host_data = setup_env_vagrant(c, 'magma')
-    with Connection(
-            host_data.get("host_string"),
-            connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, 'magma')
+    with c_agw:
         pkg.copy_packages(c_agw)
 
 
@@ -199,11 +183,8 @@ def copy_packages(c):
 def s1ap_setup_cloud(c):
     """ Prepare VMs for s1ap tests touching the cloud. """
     # Use the local cloud for integ tests
-    host_data = setup_env_vagrant(c, "magma", force_provision=False)
-    with Connection(
-        host=host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, "magma")
+    with c_agw:
         connect_gateway_to_cloud(c_agw, None, DEFAULT_CERT)
 
         # Update the gateway's streamer timeout and restart services
@@ -255,8 +236,8 @@ def _redirect_feg_agw_to_vagrant_orc8r(c_agw):
 
 @task
 def federated_integ_test(
-        c, build_all=False, clear_orc8r=False, provision_vm=False,
-        destroy_vm=False, orc8r_on_vagrant=False,
+    c, build_all=False, clear_orc8r=False, provision_vm=False,
+    destroy_vm=False, orc8r_on_vagrant=False,
 ):
 
     if orc8r_on_vagrant:
@@ -270,11 +251,8 @@ def federated_integ_test(
     if orc8r_on_vagrant:
         start_all_cmd += " --orc8r-on-vagrant"
         # modify dns entries to find Orc8r from inside Vagrant
-        host_data = vagrant_setup(c, 'magma', destroy_vm=False)
-        with Connection(
-            host=host_data.get("host_string"),
-            connect_kwargs={"key_filename": host_data.get("key_filename")},
-        ) as c_agw:
+        c_agw = vagrant_connection(c, 'magma')
+        with c_agw:
             _redirect_feg_agw_to_vagrant_orc8r(c_agw)
 
     with c.cd(FEG_INTEG_TEST_ROOT):
@@ -293,18 +271,15 @@ def federated_integ_test(
         c, 'magma_trfserver', destroy_vm, force_provision=provision_vm,
     )
 
-    test_host_data = vagrant_setup(
+    c_test, vm_data = vagrant_setup(
         c, 'magma_test', destroy_vm, force_provision=provision_vm,
     )
 
-    with Connection(
-        test_host_data.get("host_string"),
-        connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as c_test:
+    with c_test:
         _make_integ_tests(c_test)
     sleep(20)
     # run this on the host, not on the vm, as it will connect to the vm via ssh
-    _run_integ_tests(c, test_host_data, test_mode="federated_integ_test")
+    _run_integ_tests(c, vm_data, test_mode="federated_integ_test")
 
 
 def _run_build_all(c, clear_orc8r, orc8r_on_vagrant, provision_vm):
@@ -336,31 +311,32 @@ def provision_magma_dev_vm(
 
 
 def _setup_vm(c, host, name, ansible_role, ansible_file, destroy_vm, provision_vm):
-    ip = None
     if not host:
-        host_data = vagrant_setup(
+        connection, host_data = vagrant_setup(
             c, name, destroy_vm, force_provision=provision_vm,
         )
     else:
         ansible_setup(host, ansible_role, ansible_file)
-        ip = host.split('@')[1].split(':')[0]
         host_data = {
             'host_string': host,
         }
-    return host_data, ip
+        connection = Connection(host_data.get('host_string'))
+    return connection, host_data
 
 
 def _setup_gateway(
         c, gateway_host, name, ansible_role, ansible_file, destroy_vm,
         provision_vm,
 ):
-    gateway_host_data, gateway_ip = _setup_vm(
+    gateway_connection, _ = _setup_vm(
         c, gateway_host, name, ansible_role, ansible_file, destroy_vm,
         provision_vm,
     )
-    if gateway_ip is None:
+    if gateway_host is None:
         gateway_ip = GATEWAY_IP_ADDRESS
-    return gateway_host_data, gateway_ip
+    else:
+        gateway_ip = gateway_host.split('@')[1].split(':')[0]
+    return gateway_connection, gateway_ip
 
 
 @task
@@ -401,26 +377,20 @@ def integ_test(
 
     # Set up the trfserver: use the provided trfserver if given, else default to the
     # vagrant machine
-    trf_host_data, _ = _setup_vm(
+    c_trf, _ = _setup_vm(
         c, trf_host, "magma_trfserver", "trfserver", "magma_trfserver.yml",
         destroy_vm, provision_vm,
     )
-    with Connection(
-        trf_host_data.get("host_string"),
-        connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-    ) as c_trf:
+    with c_trf:
         _start_trfserver(c_trf)
 
     # Run the tests: use the provided test machine if given, else default to
     # the vagrant machine
-    test_host_data, _ = _setup_vm(
+    c_test, test_host_data = _setup_vm(
         c, test_host, "magma_test", "test", "magma_test.yml", destroy_vm,
         provision_vm,
     )
-    with Connection(
-        test_host_data.get("host_string"),
-        connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as c_test:
+    with c_test:
         _make_integ_tests(c_test)
     # run this on the host, not on the vm, as it will connect to the vm via ssh
     _run_integ_tests(c, test_host_data, gateway_ip=gateway_ip)
@@ -451,38 +421,29 @@ def integ_test_deb_installation(
 
     # Set up the gateway: use the provided gateway if given, else default to the
     # vagrant machine
-    gateway_host_data, gateway_ip = _setup_gateway(
+    c_agw, gateway_ip = _setup_gateway(
         c, gateway_host, "magma_deb", "deb", "magma_deb.yml", destroy_vm,
         provision_vm,
     )
-    with Connection(
-        gateway_host_data.get("host_string"),
-        connect_kwargs={"key_filename": gateway_host_data.get("key_filename")},
-    ) as c_agw:
+    with c_agw:
         _start_gateway(c_agw)
 
     # Set up the trfserver: use the provided trfserver if given, else default to the
     # vagrant machine
-    trf_host_data, _ = _setup_vm(
+    c_trf, _ = _setup_vm(
         c, trf_host, "magma_trfserver", "trfserver", "magma_trfserver.yml",
         destroy_vm, provision_vm,
     )
-    with Connection(
-        trf_host_data.get("host_string"),
-        connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-    ) as c_trf:
+    with c_trf:
         _start_trfserver(c_trf)
 
     # Run the tests: use the provided test machine if given, else default to
     # the vagrant machine
-    test_host_data, _ = _setup_vm(
+    c_test, test_host_data = _setup_vm(
         c, test_host, "magma_test", "test", "magma_test.yml", destroy_vm,
         provision_vm,
     )
-    with Connection(
-        test_host_data.get("host_string"),
-        connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as c_test:
+    with c_test:
         _make_integ_tests(c_test)
 
     # run this on the host, not on the vm, as it will connect to the vm via ssh
@@ -503,38 +464,29 @@ def integ_test_containerized(
 
     # Set up the gateway: use the provided gateway if given, else default to the
     # vagrant machine
-    gateway_host_data, gateway_ip = _setup_gateway(
+    c_agw, gateway_ip = _setup_gateway(
         c, gateway_host, "magma", "dev", "magma_dev.yml", destroy_vm,
         provision_vm,
     )
-    with Connection(
-        gateway_host_data.get("host_string"),
-        connect_kwargs={"key_filename": gateway_host_data.get("key_filename")},
-    ) as c_agw:
+    with c_agw:
         _start_gateway_containerized(c_agw, docker_registry)
 
     # Set up the trfserver: use the provided trfserver if given, else default to the
     # vagrant machine
-    trf_host_data, _ = _setup_vm(
+    c_trf, _ = _setup_vm(
         c, trf_host, "magma_trfserver", "trfserver", "magma_trfserver.yml",
         destroy_vm, provision_vm,
     )
-    with Connection(
-        trf_host_data.get("host_string"),
-        connect_kwargs={"key_filename": trf_host_data.get("key_filename")},
-    ) as c_trf:
+    with c_trf:
         _start_trfserver(c_trf)
 
     # Run the tests: use the provided test machine if given, else default to
     # the vagrant machine
-    test_host_data, _ = _setup_vm(
+    c_test, test_host_data = _setup_vm(
         c, test_host, "magma_test", "test", "magma_test.yml", destroy_vm,
         provision_vm,
     )
-    with Connection(
-        test_host_data.get("host_string"),
-        connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as c_test:
+    with c_test:
         _make_integ_tests(c_test)
     # run this on the host, not on the vm, as it will connect to the vm via ssh
     _run_integ_tests(c, test_host_data, gateway_ip=gateway_ip, test_mode=test_mode, tests=tests)
@@ -679,14 +631,14 @@ def get_test_logs(
 
 
 def _get_files_from_vm(c, host, vm_name, files, logs_location):
-    host_data = setup_env_vagrant(c, vm_name)
+    c_vm, host_data = vagrant_setup(c, vm_name)
     if host:
-        host_data["host_string"] = host
+        c_vm = Connection(
+            host,
+            connect_kwargs={"key_filename": host_data.get("key_filename")},
+        )
 
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_vm:
+    with c_vm:
         for p in files:
             if c_vm.run(f"test -e {p}", warn=True).ok:
                 # Fix the permissions on the files -- they have permissions 000
@@ -725,13 +677,10 @@ def build_and_start_magma(c, destroy_vm=False, provision_vm=False):
     Returns:
 
     """
-    host_data = vagrant_setup(
-        c, 'magma', destroy_vm, force_provision=provision_vm,
+    c_agw = vagrant_connection(
+        c, 'magma', destroy_vm=destroy_vm, force_provision=provision_vm,
     )
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    with c_agw:
         c_agw.sudo('service magma@* stop')
         _build_magma(c_agw)
         c_agw.sudo('service magma@magmad start')
@@ -739,53 +688,41 @@ def build_and_start_magma(c, destroy_vm=False, provision_vm=False):
 
 @task
 def make_integ_tests(c, destroy_vm=False, provision_vm=False):
-    host_data = vagrant_setup(
-        c, 'magma_test', destroy_vm, force_provision=provision_vm,
+    c_test = vagrant_connection(
+        c, 'magma_test', destroy_vm=destroy_vm, force_provision=provision_vm,
     )
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_test:
+    with c_test:
         _make_integ_tests(c_test)
 
 
 @task
 def build_and_start_magma_trf(c, destroy_vm=False, provision_vm=False):
-    host_data = vagrant_setup(
-        c, 'magma_trfserver', destroy_vm, force_provision=provision_vm,
+    c_trf = vagrant_connection(
+        c, 'magma_trfserver', destroy_vm=destroy_vm, force_provision=provision_vm,
     )
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_trf:
+    with c_trf:
         _start_trfserver(c_trf)
 
 
 @task
 def start_magma(c, destroy_vm=False, provision_vm=False):
-    host_data = vagrant_setup(
-        c, 'magma', destroy_vm, force_provision=provision_vm,
+    c_agw = vagrant_connection(
+        c, 'magma', destroy_vm=destroy_vm, force_provision=provision_vm,
     )
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    with c_agw:
         c_agw.sudo('service magma@magmad start')
 
 
 @task
 def build_test_vms(c, provision_vm=False, destroy_vm=False):
-    vagrant_setup(
-        c, 'magma_trfserver', destroy_vm, force_provision=provision_vm,
+    vagrant_connection(
+        c, 'magma_trfserver', destroy_vm=destroy_vm, force_provision=provision_vm,
     )
 
-    test_host_data = vagrant_setup(
-        c, 'magma_test', destroy_vm, force_provision=provision_vm,
+    c_test = vagrant_connection(
+        c, 'magma_test', destroy_vm=destroy_vm, force_provision=provision_vm,
     )
-    with Connection(
-        test_host_data.get("host_string"),
-        connect_kwargs={"key_filename": test_host_data.get("key_filename")},
-    ) as c_test:
+    with c_test:
         _make_integ_tests(c_test)
 
 

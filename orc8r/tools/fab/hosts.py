@@ -10,11 +10,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from typing import Dict, Tuple
+
 from fabric import Connection
 from tools.fab import vagrant
 
 
-def split_hoststring(hoststring):
+def split_hoststring(hoststring: str) -> Tuple[str, str, str]:
     """
     Splits a host string into its user, hostname, and port components
 
@@ -26,7 +28,18 @@ def split_hoststring(hoststring):
     return user, ip, port
 
 
-def vagrant_setup(c, host, destroy_vm, force_provision=False):
+def vagrant_connection(
+    c: Connection, host: str, destroy_vm: bool = False,
+    force_provision: bool = False
+) -> Connection:
+    conn, _ = vagrant_setup(c, host, destroy_vm, force_provision)
+    return conn
+
+
+def vagrant_setup(
+        c: Connection, host: str, destroy_vm: bool = False,
+        force_provision: bool = False
+) -> Tuple[Connection, Dict[str, str]]:
     """
     Setup the specified vagrant box
 
@@ -59,7 +72,7 @@ def ansible_setup(
     # Provision the gateway host
     (user, ip, port) = split_hoststring(hoststr)
 
-    with Connection(host=ip, user=user, port=port) as c:
+    with Connection(host=ip, user=user, port=int(port)) as c:
         c.run(
             "echo '[%s]\nhost ansible_host=%s ansible_user=%s"
             " ansible_port=%s' > /tmp/hosts" % (ansible_group, ip, user, port),

@@ -18,7 +18,7 @@ import urllib3
 sys.path.append('../../orc8r')
 import tools.fab.dev_utils as dev_utils  # NOQA
 import tools.fab.types as types
-import tools.fab.vagrant as vagrant
+from tools.fab.host import vagrant_connection
 from fabric import Connection, task
 
 SNOWFLAKE_FEG_FILE = '../../.cache/feg/snowflake'
@@ -65,11 +65,8 @@ def check_feg_cloud_connectivity(c, timeout=5):
         timeout: amount of time the command will retry
     """
     with c.cd(AGW_ROOT):
-        host_data = vagrant.setup_env_vagrant(c, 'magma', force_provision=False)
-        with Connection(
-            host=host_data.get("host_string"),
-            connect_kwargs={"key_filename": host_data.get("key_filename")},
-        ) as c_agw:
+        c_agw = vagrant_connection(c, 'magma')
+        with c_agw:
             with c_agw.cd(FEG_INTEG_DOCKER):
                 c_agw.run("pwd")
                 dev_utils.run_remote_command_with_repetition(

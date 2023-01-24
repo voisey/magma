@@ -18,7 +18,7 @@ from fabric import Connection, task
 
 sys.path.append('../../../../../orc8r')
 import tools.fab.dev_utils as dev_utils
-from tools.fab.hosts import vagrant_setup
+from tools.fab.hosts import vagrant_setup, vagrant_connection
 
 magma_path = "../../../../../"
 orc8_docker_path = magma_path + "orc8r/cloud/docker/"
@@ -104,11 +104,8 @@ def _run_orc8r_command(c, command, on_vagrant):
         subprocess.check_call(command, shell=True, cwd=orc8_docker_path)
     else:
         with c.cd(agw_path):
-            host_data = vagrant_setup(c, 'magma', destroy_vm=False)
-            with Connection(
-                    host_data.get("host_string"),
-                    connect_kwargs={"key_filename": host_data.get("key_filename")},
-            ) as c_agw:
+            c_agw = vagrant_connection(c, 'magma')
+            with c_agw:
                 with c_agw.cd(orc8r_vagrant_path):
                     c_agw.run(command)
 
@@ -125,11 +122,8 @@ def configure_orc8r(c, on_vagrant=False):
         subprocess.check_call(command_agw, shell=True, cwd=agw_path)
         subprocess.check_call(command_feg, shell=True, cwd=feg_path)
     else:
-        host_data = vagrant_setup(c, 'magma', destroy_vm=False)
-        with Connection(
-            host_data.get("host_string"),
-            connect_kwargs={"key_filename": host_data.get("key_filename")},
-        ) as c_agw:
+        c_agw = vagrant_connection(c, 'magma')
+        with c_agw:
             with c_agw.cd(agw_vagrant_path):
                 c_agw.run(command_agw)
             with c_agw.cd(feg_vagrant_path):
@@ -206,11 +200,8 @@ def build_feg(c):
     build FEG on magma Vagrant vm using docker running in Vagrant
     """
     print('#### Building FEG on Magma Vagrant VM ####')
-    host_data = vagrant_setup(c, 'magma', destroy_vm=False)
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, 'magma')
+    with c_agw:
         with c_agw.cd(feg_docker_integ_test_path_vagrant):
             c_agw.run('docker compose down')
             c_agw.run('docker compose --compatibility build')
@@ -241,11 +232,8 @@ def start_feg(c):
     """
     start FEG on magma Vagrant vm using docker running in Vagrant
     """
-    host_data = vagrant_setup(c, 'magma', destroy_vm=False)
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, 'magma')
+    with c_agw:
         with c_agw.cd(feg_docker_integ_test_path_vagrant):
             c_agw.run('./run.py')
 
@@ -265,8 +253,8 @@ def stop_feg(c):
     """
     stop FEG on magma Vagrant vm using docker running in Vagrant
     """
-    host_data = vagrant_setup(c, 'magma', destroy_vm=False)
-    with Connection(host_data.get("host_string")) as c_agw:
+    c_agw = vagrant_connection(c, 'magma')
+    with c_agw:
         with c_agw.cd(feg_docker_integ_test_path_vagrant):
             c_agw.run('docker compose down')
 
@@ -341,11 +329,8 @@ def test_connectivity(c, timeout=10):
 
     # check FEG-cloud connectivity
     print("\n### Checking FEG-Cloud connectivity ###")
-    host_data = vagrant_setup(c, 'magma', destroy_vm=False)
-    with Connection(
-        host_data.get("host_string"),
-        connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, 'magma')
+    with c_agw:
         with c_agw.cd(feg_docker_integ_test_path_vagrant):
             dev_utils.run_remote_command_with_repetition(
                 c_agw, 'docker compose exec -t magmad checkin_cli.py', timeout,
