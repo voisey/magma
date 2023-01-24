@@ -223,7 +223,6 @@ def transfer_artifacts(
     """
     Fetches service logs from Docker and optionally gets core dumps
     Args:
-        c: Fabric connection
         gateway_vm: VM to fetch logs from
         gateway_ansible_file: Ansible file to use for VM
         services: A list of services for which services logs are requested

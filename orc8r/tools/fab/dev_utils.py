@@ -39,7 +39,6 @@ def register_generic_gateway(
     Register a generic magmad gateway.
 
     Args:
-        c: Fabric connection
         network_id: Network to register inside
         vm_name: Vagrant VM name to pull HWID from
         admin_cert: Cert for API access
@@ -190,7 +189,6 @@ def get_gateway_hardware_id_from_vagrant(c: Connection, vm_name: str) -> str:
     Get the hardware ID of a gateway running on Vagrant VM
 
     Args:
-        c: Fabric connection
         vm_name: Name of the vagrant machine to use
 
     Returns:
@@ -207,7 +205,6 @@ def get_gateway_hardware_id_from_docker(c: Connection, location_docker_compose: 
     Get the hardware ID of a gateway running on Docker
 
     Args:
-        c: Fabric connection
         location_docker_compose: location of docker compose used to run FEG
         by default feg/gateway/docker
     Returns:
@@ -228,7 +225,6 @@ def delete_gateway_certs_from_vagrant(c: Connection, vm_name: str):
     Delete certificates and gw_challenge of a gateway running on Vagrant VM
 
     Args:
-        c: Fabric connection
         vm_name: Name of the vagrant machine to use
     """
     with c.cd(AGW_ROOT):
@@ -244,7 +240,6 @@ def delete_gateway_certs_from_docker(c: Connection, location_docker_compose: str
         Delete certificates and gw_challenge of a gateway running on Docker
 
     Args:
-        c: Fabric connection
         location_docker_compose: location of docker compose used to run FEG
     """
     with c.cd(AGW_ROOT):
@@ -434,7 +429,6 @@ def run_local_command_with_repetition(c, command, timeout=5):
     Run command on local machine using fabric.connection.Connection.local.
     Repeats on error
     Args:
-        c: fabric context
         command: command to issue
         timeout: time to execute the command while it fails
     """
@@ -446,7 +440,6 @@ def run_remote_command_with_repetition(c, command, timeout=5):
     Run command on remote machine using fabric.connection.Connection.run.
     Repeats on error
     Args:
-        c: fabric connection to remote machine
         command: command to run
         timeout: time to execute the command while it fails
     """

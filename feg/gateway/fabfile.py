@@ -35,7 +35,6 @@ def register_feg_gw(c, location_docker_compose=FEG_DOCKER_LOCATION):
     """
     Add FEG gateway to orc8r
     Args:
-        c: fabric Connection
         location_docker_compose: location of docker compose. Default set to
         FEG_DOCKER_LOCATION
     """
@@ -48,7 +47,6 @@ def deregister_feg_gw(c, location_docker_compose=FEG_DOCKER_LOCATION):
     """
     Remove FEG gateway from orc8r and remove certs from FEG gateway
     Args:
-        c: fabric Connection
         location_docker_compose: location of docker compose. Default set to
         FEG_DOCKER_LOCATION
     """
@@ -61,7 +59,6 @@ def check_feg_cloud_connectivity(c, timeout=5):
     """
     Check connectivity of FEG with the cloud using checkin_cli.py
     Args:
-        c: fabric connection
         timeout: amount of time the command will retry
     """
     with c.cd(AGW_ROOT):

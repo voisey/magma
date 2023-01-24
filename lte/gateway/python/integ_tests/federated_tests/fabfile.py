@@ -37,7 +37,6 @@ def build_all_and_configure(c, clear_orc8r=False, provision_vm=False):
     """
     Build, start and configure AGW, FEG and Orc8r
     Args:
-        c: fabric connection
         clear_orc8r: removes all contents from orc8r database like gw configs
         provision_vm: forces the re-provision of the magma VM
     """
@@ -51,7 +50,6 @@ def build_all(c, clear_orc8r=False, provision_vm=False, orc8r_on_vagrant=False):
     """
     Build AGW, FEG and Orc8r
     Args:
-        c: fabric connection
         clear_orc8r: removes all contents from orc8r database like gw configs
         provision_vm: forces the reprovision of the magma VM
         orc8r_on_vagrant: flag to build orc8r on vagrant or on host machine
@@ -294,7 +292,6 @@ def start_all(c, provision_vm=False, orc8r_on_vagrant=False):
     """
     start AGW, FEG and Orc8r
     Args:
-        c: fabric context
         provision_vm: forces the provision of the magma VM
         orc8r_on_vagrant: flag  to run orc8r on vagrant or on host machine
     """
@@ -352,7 +349,6 @@ def build_and_test_all(
     """
     Build, start and test connectivity of all elements
     Args:
-        c: fabric context
         clear_orc8r: removes all contents from orc8r database like gw configs
         provision_vm: forces the re-provision of the magma VM
         timeout: amount of time the command will retry

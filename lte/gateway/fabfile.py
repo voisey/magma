@@ -579,7 +579,6 @@ def get_test_logs(
     "/tmp/build_logs.tar.gz" by default.
 
     Args:
-        c: fabric connection
         gateway_host_name: name of the gateway machine
         gateway_host: The ssh address string of the gateway machine formatted
             as "host:port". If not specified, defaults to the `magma` vagrant box.
@@ -670,7 +669,6 @@ def build_and_start_magma(c, destroy_vm=False, provision_vm=False):
     """
     Build Magma AGW and starts magma
     Args:
-        c: fabric connection
         destroy_vm: if set to True it will destroy Magma Vagrant VM
         provision_vm: if set to true it will reprovision Magma VM
 

@@ -180,7 +180,6 @@ def check_agw_cloud_connectivity(c, timeout=10):
     """
     Check connectivity of AGW with the cloud using checkin_cli.py
     Args:
-        c: fabric connection
         timeout: amount of time the command will retry
     """
     c_agw = vagrant_connection(c, "magma")
@@ -194,7 +193,6 @@ def check_agw_feg_connectivity(c, timeout=10):
     """
     Check connectivity of AGW with FEG feg_hello_cli.py
     Args:
-        c: fabric connection
         timeout: amount of time the command will retry
     """
     c_agw = vagrant_connection(c, "magma")
