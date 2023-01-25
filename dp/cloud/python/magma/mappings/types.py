@@ -18,7 +18,7 @@ class RequestTypes(enum.Enum):
     """
     Request type class
     """
-    REGISTRATION: int = "registrationRequest"
+    REGISTRATION = "registrationRequest"
     SPECTRUM_INQUIRY = "spectrumInquiryRequest"
     GRANT = "grantRequest"
     HEARTBEAT = "heartbeatRequest"
