@@ -376,14 +376,11 @@ def integ_test(
 
     # Set up the gateway: use the provided gateway if given, else default to the
     # vagrant machine
-    gateway_host_data, gateway_ip = _setup_gateway(
+    c_agw, gateway_ip = _setup_gateway(
         c, gateway_host, "magma", "dev", "magma_dev.yml", destroy_vm,
         provision_vm,
     )
-    with Connection(
-        gateway_host_data.get("host_string"),
-        connect_kwargs={"key_filename": gateway_host_data.get("key_filename")},
-    ) as c_agw:
+    with c_agw:
         _build_magma(c_agw)
         _start_gateway(c_agw)
 
@@ -562,11 +559,8 @@ def get_test_summaries(
 def _get_test_summaries_from_vm(c, dst_path, vm_name):
     results_folder = "test-results"
     results_dir = "/var/tmp/"
-    host_data = vagrant_setup(c, vm_name, destroy_vm=False)
-    with Connection(
-            host_data.get("host_string"),
-            connect_kwargs={"key_filename": host_data.get("key_filename")},
-    ) as c_agw:
+    c_agw = vagrant_connection(c, vm_name)
+    with c_agw:
         if c_agw.run(
             f"test -e {c_agw, results_dir + '/' + results_folder}", warn=True,
         ).ok:

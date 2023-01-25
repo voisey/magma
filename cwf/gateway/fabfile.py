@@ -153,7 +153,7 @@ def integ_test(
     # Setup the trfserver: use the provided trfserver if given, else default to
     # the vagrant machine
     with c.cd(LTE_AGW_ROOT):
-        c_trf, _ = _set_up_vm(
+        c_trf = _set_up_vm(
             c, gateway_host, "magma_trfserver",
             "magma_trfserver.yml", destroy_vm, provision_vm,
         )
