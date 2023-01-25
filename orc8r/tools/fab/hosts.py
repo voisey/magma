@@ -30,7 +30,7 @@ def split_hoststring(hoststring: str) -> Tuple[str, str, str]:
 
 def vagrant_connection(
     c: Connection, host: str, destroy_vm: bool = False,
-    force_provision: bool = False
+    force_provision: bool = False,
 ) -> Connection:
     conn, _ = vagrant_setup(c, host, destroy_vm, force_provision)
     return conn
@@ -38,7 +38,7 @@ def vagrant_connection(
 
 def vagrant_setup(
         c: Connection, host: str, destroy_vm: bool = False,
-        force_provision: bool = False
+        force_provision: bool = False,
 ) -> Tuple[Connection, Dict[str, str]]:
     """
     Setup the specified vagrant box

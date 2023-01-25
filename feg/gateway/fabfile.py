@@ -18,8 +18,8 @@ import urllib3
 sys.path.append('../../orc8r')
 import tools.fab.dev_utils as dev_utils  # NOQA
 import tools.fab.types as types
-from tools.fab.host import vagrant_connection
 from fabric import Connection, task
+from tools.fab.host import vagrant_connection
 
 SNOWFLAKE_FEG_FILE = '../../.cache/feg/snowflake'
 NETWORK_ID = 'feg_test'

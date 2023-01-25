@@ -18,7 +18,7 @@ from fabric import Connection, task
 
 sys.path.append('../../../../../orc8r')
 import tools.fab.dev_utils as dev_utils
-from tools.fab.hosts import vagrant_setup, vagrant_connection
+from tools.fab.hosts import vagrant_connection, vagrant_setup
 
 magma_path = "../../../../../"
 orc8_docker_path = magma_path + "orc8r/cloud/docker/"

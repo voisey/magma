@@ -14,24 +14,24 @@ limitations under the License.
 import sys
 from time import sleep
 
+# import fab tasks from dev_tools, so they can be called via fab in the command line
+from dev_tools import (  # noqa: F401
+    check_agw_cloud_connectivity,
+    check_agw_feg_connectivity,
+    deregister_agw,
+    deregister_federated_agw,
+    deregister_feg_gw,
+    register_federated_vm,
+    register_feg_gw,
+    register_vm,
+    register_vm_remote,
+)
 from fabric import Connection, task
 
 sys.path.append('../../orc8r')
 import tools.fab.pkg as pkg
-# import fab tasks from dev_tools, so they can be called via fab in the command line
-from dev_tools import (  # noqa: F401
-    register_vm,
-    register_vm_remote,
-    register_federated_vm,
-    deregister_agw,
-    deregister_federated_agw,
-    register_feg_gw,
-    deregister_feg_gw,
-    check_agw_cloud_connectivity,
-    check_agw_feg_connectivity,
-)
 from tools.fab.dev_utils import connect_gateway_to_cloud
-from tools.fab.hosts import ansible_setup, split_hoststring, vagrant_setup, vagrant_connection
+from tools.fab.hosts import ansible_setup, vagrant_connection, vagrant_setup
 
 """
 Magma Gateway packaging tool:
