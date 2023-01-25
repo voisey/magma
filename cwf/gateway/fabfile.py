@@ -50,9 +50,9 @@ def integ_test(
     c, gateway_host=None, test_host=None, trf_host=None,
     gateway_vm="cwag", gateway_ansible_file="cwag_dev.yml",
     transfer_images=False, skip_docker_load=False, tar_path="/tmp/cwf-images",
-    destroy_vm=False, build=False,
+    destroy_vm=False, build=True,
     tests_to_run="all", skip_unit_tests=False, test_re=None,
-    test_result_xml=None, skip_integ_tests=False, count="1", provision_vm=False,
+    test_result_xml=None, run_tests=True, count="1", provision_vm=True,
     rerun_fails="1",
 ):
     """
@@ -75,10 +75,10 @@ def integ_test(
     destroy_vm: When set to true, all VMs will be destroyed before running the
      tests
 
-    provision_vm: When set to true, this script will provision all VMs
+    provision_vm: When set to false, this script will not provision the VMs
      before running the tests
 
-    build: When set to true, this script will rebuild all docker images
+    build: When set to false, this script will skip rebuilding all docker images
         in the CWAG VM
 
     transfer_images: When set to true, the script will transfer all cwf_* docker
@@ -93,7 +93,7 @@ def integ_test(
 
     skip_unit_tests: When set to true, only integration tests will be run
 
-    skip_integ_tests: When set to true, no integration tests will be run
+    run_tests: When set to false, no integration tests will be run
 
     test_re: When set to a value, integrations tests that match the expression will be run.
         (Ex: test_re=TestAuth will run all tests that start with TestAuth)
@@ -188,7 +188,7 @@ def integ_test(
         _start_ue_simulator(c_test)
         _set_cwag_test_networking(c_test, cwag_br_mac)
 
-        if skip_integ_tests:
+        if not run_tests:
             _add_docker_host_remote_network_envvar(c_test)
             print(
                 "run_tests was set to false. Test will not be run\n"

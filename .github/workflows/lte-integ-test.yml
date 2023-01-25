@@ -67,7 +67,7 @@ jobs:
           cd lte/gateway
           export MAGMA_DEV_CPUS=3
           export MAGMA_DEV_MEMORY_MB=9216
-          fab integ-test --destroy-vm --provision-vm
+          fab integ-test
       - name: Get test results
         if: always()
         run: |

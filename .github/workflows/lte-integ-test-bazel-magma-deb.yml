@@ -71,7 +71,7 @@ jobs:
             export MAGMA_PACKAGE=magma=${{ github.event.client_payload.magma_version }}
           fi
           echo "Starting integration tests using magma artifact \"${MAGMA_PACKAGE}\"."
-          fab integ-test-deb-installation --destroy-vm --provision-vm
+          fab integ-test-deb-installation
 
       - name: Get test results
         if: always()

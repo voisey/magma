@@ -63,7 +63,7 @@ jobs:
           MAGMA_PACKAGE: ${{ github.event.client_payload.artifact }}
         working-directory: 'lte/gateway/'
         run: |
-          fab integ-test-deb-installation --destroy-vm --provision-vm
+          fab integ-test-deb-installation
       - name: Get test results
         if: always()
         working-directory: 'lte/gateway/'

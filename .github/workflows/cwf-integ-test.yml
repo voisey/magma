@@ -108,7 +108,7 @@ jobs:
       - name: Run the integ test
         run: |
           cd cwf/gateway
-          fab integ-test --destroy-vm --provision-vm --build --skip-docker-load --transfer-images --test-result-xml=tests.xml --rerun-fails=3 --tar-path="/tmp/cwf-images"
+          fab integ-test --destroy-vm --transfer-images --test-result-xml=tests.xml --rerun-fails=3 --skip-docker-load --tar-path="/tmp/cwf-images"
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # pin@v3

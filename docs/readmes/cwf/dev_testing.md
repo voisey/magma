@@ -64,14 +64,14 @@ Runs an iperf3 server to drive traffic through CWAG.
 To run all setup work and the entire CWF integration test suite, run
 
 ```bash
-[HOST] fab integ-test --build --provision-vm
+[HOST] fab integ-test
 ```
 
 Once the above command has been executed, which means that the set-up of the VMs etc. has been
-performed, command-line options can be dropped to rerun the tests without redoing the set-up
+performed, command-line options can be utilized to rerun the tests without redoing the set-up
 
 ```bash
-[HOST] fab integ-test
+[HOST] fab integ-test --no-provision-vm --no-build
 ```
 
 #### Individual tests
@@ -79,7 +79,7 @@ performed, command-line options can be dropped to rerun the tests without redoin
 The command above can be further modified to run one integration test at a time
 
 ```bash
-[HOST] fab integ-test --skip_unit_tests --test_re=<TEST_TO_RUN>
+[HOST] fab integ-test --no-provision-vm --no-build --skip_unit_tests --test_re=<TEST_TO_RUN>
 ```
 
 where `<TEST_TO_RUN>` is to be replaced by the desired test, e.g. `TestGyReAuth`. Run
@@ -87,10 +87,10 @@ where `<TEST_TO_RUN>` is to be replaced by the desired test, e.g. `TestGyReAuth`
 
 Note that running a test can be further expedited by running it directly on the CWAG test VM using
 `gotestsum`, which echoes how it is run by the `fab` command. In particular, the above command can
-be run with the `--skip-integ-tests` flag to just do the required set-up
+be run with the `--no-run-tests` flag to just do the required set-up
 
 ```bash
-[HOST] fab integ-test --skip-unit-tests --skip-integ-tests
+[HOST] fab integ-test --no-run-tests --no-provision-vm --no-build --skip-unit-tests --skip-integ-tests
 ```
 
 before logging into the CWAG test VM, navigating to the gateway folder and running the test directly

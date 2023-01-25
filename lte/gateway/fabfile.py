@@ -296,7 +296,7 @@ def _run_build_all(c, clear_orc8r, orc8r_on_vagrant, provision_vm):
 
 @task
 def provision_magma_dev_vm(
-    c, gateway_host=None, destroy_vm=False, provision_vm=False,
+    c, gateway_host=None, destroy_vm=True, provision_vm=True,
 ):
     """
     Prepare to run the integration tests on the bazel build services.
@@ -342,7 +342,7 @@ def _setup_gateway(
 @task
 def integ_test(
     c, gateway_host=None, test_host=None, trf_host=None,
-    destroy_vm=False, provision_vm=False,
+    destroy_vm=True, provision_vm=True,
 ):
     """
     Run the integration tests. This defaults to running on local vagrant
@@ -399,7 +399,7 @@ def integ_test(
 @task
 def integ_test_deb_installation(
     c, gateway_host=None, test_host=None, trf_host=None,
-    destroy_vm=False, provision_vm=False,
+    destroy_vm=True, provision_vm=True,
 ):
     """
     Run the integration tests. This defaults to running on local vagrant
@@ -453,7 +453,7 @@ def integ_test_deb_installation(
 @task
 def integ_test_containerized(
     c, gateway_host=None, test_host=None, trf_host=None,
-    destroy_vm=False, provision_vm=False,
+    destroy_vm=True, provision_vm=True,
     test_mode='integ_test_containerized',
     tests='', docker_registry=None,
 ):

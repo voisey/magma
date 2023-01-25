@@ -52,7 +52,7 @@ This VM runs an iperf3 server.
 - see <https://magma.github.io/magma/docs/basics/prerequisites> for
 our prerequisites on running our VMs.
 
-To run the test, run `fab integ-test --build` from `magma/cwf/gateway`.
+To run the test, run `fab integ-test` from `magma/cwf/gateway`.
 This fabfile will
 
 - Provision the 3 VMs
@@ -64,9 +64,9 @@ This fabfile will
 
 #### Fab script parameters
 
-- `build`: The fabfile by default only stops and restarts all containers. If you
-want rebuild everything, run
-`fab integ-test --build`.
+- `build`: The fabfile by default stops, rebuilds, and restarts all containers.
+  If you only want to restart the containers, and not rebuild everything, run
+`fab integ-test --no-build`.
 - `tests-to-run`: By default, the fab script will run all existing tests. You can
 specify a subset of them with this flag. For example, run `fab integ-test --tests-to-run=gx`,
 to only run Gx tests. See the fabfile for more options.

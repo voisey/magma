@@ -102,7 +102,7 @@ jobs:
           MAGMA_DEV_MEMORY_MB: 9216
         working-directory: lte/gateway
         run: |
-          fab -d integ-test-containerized --destroy-vm --provision-vm --test-mode=${{ inputs.test_targets }} --docker-registry=${{ inputs.registry }}
+          fab -d integ-test-containerized --test-mode=${{ inputs.test_targets }} --docker-registry=${{ inputs.registry }}
       - name: Get test results
         if: always()
         working-directory: lte/gateway
