@@ -37,7 +37,7 @@ CWAG_ROOT = "$MAGMA_ROOT/cwf/gateway"
 CWAG_INTEG_ROOT = "$MAGMA_ROOT/cwf/gateway/integ_tests"
 LTE_AGW_ROOT = "../../lte/gateway"
 
-CWAG_IP = "192.168.70.101"
+CWAG_IP: int = "192.168.70.101"
 CWAG_TEST_IP = "192.168.128.2"
 TRF_SERVER_IP = "192.168.129.42"
 TRF_SERVER_SUBNET = "192.168.129.0"

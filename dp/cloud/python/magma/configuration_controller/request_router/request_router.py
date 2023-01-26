@@ -92,7 +92,7 @@ class RequestRouter(object):
 
         return sas_response
 
-    def redirect_sas_response_to_radio_controller(self, sas_response: requests.Response) -> requests.Response:
+    def redirect_sas_response_to_radio_controller(self, sas_response: requests.Response) -> int:
         """
         Send Response object to Radio Controller's ingest endpoint
 
