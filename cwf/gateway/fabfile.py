@@ -496,10 +496,10 @@ def _run_integ_tests(
 def _clean_up(c, c_trf):
     # already in cwag test vm at this point
     # Kill uesim service
-    c.run('pkill go', warn=True)
+    c.sudo('pkill go', warn=True)
     with c.cd(LTE_AGW_ROOT):
         with c_trf:
-            c_trf.run('pkill iperf3 > /dev/null &', pty=False, warn=True)
+            c_trf.sudo('pkill iperf3 > /dev/null &', pty=False, warn=True)
 
 
 class FabricException(Exception):
