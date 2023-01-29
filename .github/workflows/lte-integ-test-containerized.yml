@@ -101,8 +101,8 @@ jobs:
           MAGMA_DEV_CPUS: 3
           MAGMA_DEV_MEMORY_MB: 9216
         working-directory: lte/gateway
-        run: |
-          fab -d integ-test-containerized --test-mode=${{ inputs.test_targets }} --docker-registry=${{ inputs.registry }}
+        # the image is directly concatenated to the registry, so we need the slash as delimiter
+        run: fab -d integ-test-containerized --test-mode=${{ inputs.test_targets }} --docker-registry=${{ inputs.registry }}/
       - name: Get test results
         if: always()
         working-directory: lte/gateway
