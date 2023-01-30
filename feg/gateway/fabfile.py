@@ -62,12 +62,12 @@ def check_feg_cloud_connectivity(c, timeout=5):
         timeout: amount of time the command will retry
     """
     with c.cd(AGW_ROOT):
-        c_agw = vagrant_connection(c, 'magma')
-        with c_agw:
-            with c_agw.cd(FEG_INTEG_DOCKER):
-                c_agw.run("pwd")
+        c_gw = vagrant_connection(c, 'magma')
+        with c_gw:
+            with c_gw.cd(FEG_INTEG_DOCKER):
+                c_gw.run("pwd")
                 dev_utils.run_remote_command_with_repetition(
-                    c_agw, "docker compose exec magmad checkin_cli.py", timeout,
+                    c_gw, "docker compose exec magmad checkin_cli.py", timeout,
                 )
 
 

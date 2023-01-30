@@ -182,10 +182,10 @@ def check_agw_cloud_connectivity(c, timeout=10):
     Args:
         timeout: amount of time the command will retry
     """
-    c_agw = vagrant_connection(c, "magma")
-    with c_agw:
-        with c_agw.cd("/home/vagrant/build/python/bin/"):
-            dev_utils.run_remote_command_with_repetition(c_agw, "./checkin_cli.py", timeout)
+    c_gw = vagrant_connection(c, "magma")
+    with c_gw:
+        with c_gw.cd("/home/vagrant/build/python/bin/"):
+            dev_utils.run_remote_command_with_repetition(c_gw, "./checkin_cli.py", timeout)
 
 
 @task
@@ -195,10 +195,10 @@ def check_agw_feg_connectivity(c, timeout=10):
     Args:
         timeout: amount of time the command will retry
     """
-    c_agw = vagrant_connection(c, "magma")
-    with c_agw:
-        with c_agw.cd("/home/vagrant/build/python/bin/"):
-            dev_utils.run_remote_command_with_repetition(c_agw, "./feg_hello_cli.py m 0", timeout)
+    c_gw = vagrant_connection(c, "magma")
+    with c_gw:
+        with c_gw.cd("/home/vagrant/build/python/bin/"):
+            dev_utils.run_remote_command_with_repetition(c_gw, "./feg_hello_cli.py m 0", timeout)
 
 
 def _register_network(network_type: str, payload: Any):
