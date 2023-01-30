@@ -207,10 +207,6 @@ def integ_test(
             c, test_host, trf_host, tests_to_run, test_re, count,
             test_result_xml, rerun_fails, c_test, c_trf,
         )
-
-    if not test_host and not trf_host:
-        # Clean up only for now when running locally
-        _clean_up(c, c_trf)
     print(f'Integration Test Passed for "{tests_to_run.value}"!')
     sys.exit(0)
 
@@ -485,19 +481,19 @@ def _run_integ_tests(
         with c_test_vm.cd(CWAG_INTEG_ROOT):
             result = c_test_vm.run(go_test_cmd, env=shell_env_vars, warn=True)
 
-    if result.return_code != 0:
-        if not test_host and not trf_host:
-            # Clean up only for now when running locally
-            _clean_up(c, c_trf)
+        if result.return_code != 0:
+            if not test_host and not trf_host:
+                # Clean up only for now when running locally
+                _clean_up(c_test_vm, c_trf)
+
         print("Integration Test returned ", result.return_code)
         sys.exit(result.return_code)
 
 
-def _clean_up(c, c_trf):
-    # already in cwag test vm at this point
+def _clean_up(c_test_vm, c_trf):
     # Kill uesim service
-    c.sudo('pkill go', warn=True)
-    with c.cd(LTE_AGW_ROOT):
+    c_test_vm.sudo('pkill go', warn=True)
+    with c_test_vm.cd(LTE_AGW_ROOT):
         with c_trf:
             c_trf.sudo('pkill iperf3 > /dev/null &', pty=False, warn=True)
 
