@@ -133,7 +133,7 @@ def upload_pkgs_to_aws(c_agw: Connection):
     # Clean up
     c_agw.run('rm -r /tmp/packages')
     c_agw.run('rm /tmp/packages.tar.gz')
-    c_agw.run('rm /tmp/packages.tar.gz')
+    c_agw.local('rm /tmp/packages.tar.gz')
     c_agw.run('rm /tmp/packages.txt')
 
 
