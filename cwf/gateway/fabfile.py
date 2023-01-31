@@ -288,7 +288,7 @@ def _transfer_docker_images(c_cwf, skip_docker_load, tar_path):
 
 def _set_cwag_configs(c_vm, configfile):
     """ Set the necessary config overrides """
-    c_vm.sudo('mkdir -p /var/opt/magma/configs')
+    c_vm.run('sudo mkdir -p /var/opt/magma/configs')
     c_vm.sudo(f"cp {CWAG_INTEG_ROOT}/{configfile} /var/opt/magma/configs/gateway.mconfig")
 
 
@@ -303,10 +303,10 @@ def _get_br_mac(c_vm, bridge_name):
 
 def _set_cwag_test_configs(c_test):
     """ Set the necessary test configs """
-    c_test.sudo('mkdir -p /etc/magma')
+    c_test.run('sudo mkdir -p /etc/magma')
     # Create empty uesim config
-    c_test.sudo('touch /etc/magma/uesim.yml')
-    c_test.sudo('cp -r $MAGMA_ROOT/cwf/gateway/configs /etc/magma/')
+    c_test.run('sudo touch /etc/magma/uesim.yml')
+    c_test.run('sudo cp -r $MAGMA_ROOT/cwf/gateway/configs /etc/magma/')
 
 
 def _start_ipfix_controller(c_test):
@@ -352,8 +352,8 @@ def _add_networkhost_docker(c_cwf):
     c_cwf.sudo(f"mv {tmp_docker_svc_fn} {svc_cfg_dir}")
 
     # restart systemd and docker service
-    c_cwf.sudo("systemctl daemon-reload")
-    c_cwf.sudo("systemctl restart docker")
+    c_cwf.run("sudo systemctl daemon-reload")
+    c_cwf.run("sudo systemctl restart docker")
 
 
 def _stop_gateway(c_cwf):
@@ -431,7 +431,7 @@ def _start_ue_simulator(c_test):
 def _start_trfserver(c_trf):
     """ Starts the traffic gen server"""
     trf_cmd = f'nohup iperf3 -s --json -B {TRF_SERVER_IP} > /dev/null &'
-    c_trf.sudo('apt-get install -y dtach')
+    c_trf.run('sudo apt-get install -y dtach')
     c_trf.sudo(f"dtach -n `mktemp -u /tmp/dtach.XXXX` {trf_cmd}")
 
 
@@ -492,10 +492,10 @@ def _run_integ_tests(
 
 def _clean_up(c_test_vm, c_trf):
     # Kill uesim service
-    c_test_vm.sudo('pkill go', warn=True)
+    c_test_vm.run('sudo pkill go', warn=True)
     with c_test_vm.cd(LTE_AGW_ROOT):
         with c_trf:
-            c_trf.sudo('pkill iperf3 > /dev/null &', pty=False, warn=True)
+            c_trf.run('sudo pkill iperf3 > /dev/null &', pty=False, warn=True)
 
 
 class FabricException(Exception):

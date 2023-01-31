@@ -231,8 +231,8 @@ def delete_gateway_certs_from_vagrant(c: Connection, vm_name: str):
         c_gw = vagrant_connection(c, vm_name)
         with c_gw:
             with c_gw.cd('/var/opt/magma/certs'):
-                c_gw.sudo('rm gateway.*', hide=True, warn=True)
-                c_gw.sudo('rm gw_challenge.key', hide=True, warn=True)
+                c_gw.run('sudo rm gateway.*', hide=True, warn=True)
+                c_gw.run('sudo rm gw_challenge.key', hide=True, warn=True)
 
 
 def delete_gateway_certs_from_docker(c: Connection, location_docker_compose: str):
@@ -304,8 +304,8 @@ def connect_gateway_to_cloud(
     non-default control proxy setting and certificates
     """
     # Add the override for the production endpoints
-    c_gw.sudo("rm -rf /var/opt/magma/configs")
-    c_gw.sudo("mkdir /var/opt/magma/configs")
+    c_gw.run("sudo rm -rf /var/opt/magma/configs")
+    c_gw.run("sudo mkdir /var/opt/magma/configs")
     if control_proxy_setting_path is not None:
         c_gw.sudo(
             "cp " + control_proxy_setting_path
@@ -313,13 +313,13 @@ def connect_gateway_to_cloud(
         )
 
     # Copy certs which will be used by the bootstrapper
-    c_gw.sudo("rm -rf /var/opt/magma/certs")
-    c_gw.sudo("mkdir /var/opt/magma/certs")
-    c_gw.sudo("cp " + cert_path + " /var/opt/magma/certs/")
+    c_gw.run("sudo rm -rf /var/opt/magma/certs")
+    c_gw.run("sudo mkdir /var/opt/magma/certs")
+    c_gw.run("sudo cp " + cert_path + " /var/opt/magma/certs/")
 
     # Restart the bootstrapper in the gateway to use the new certs
-    c_gw.sudo("systemctl stop magma@*")
-    c_gw.sudo("systemctl restart magma@magmad")
+    c_gw.run("sudo systemctl stop magma@*")
+    c_gw.run("sudo systemctl restart magma@magmad")
 
 
 def cloud_get(

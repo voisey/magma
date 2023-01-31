@@ -243,7 +243,7 @@ def _redirect_feg_agw_to_vagrant_orc8r(c_gw):
         f"{FEG_INTEG_TEST_DOCKER_ROOT}/docker-compose.override.yml",
     )
     # on ubuntu
-    c_gw.sudo("sed -i 's/10.0.2.2/127.0.0.1/' '/etc/hosts'")
+    c_gw.run("sudo sed -i 's/10.0.2.2/127.0.0.1/' '/etc/hosts'")
 
 
 @task
@@ -685,9 +685,9 @@ def build_and_start_magma(c, destroy_vm=False, provision_vm=False):
         c, 'magma', destroy_vm=destroy_vm, force_provision=provision_vm,
     )
     with c_gw:
-        c_gw.sudo('service magma@* stop')
+        c_gw.run('sudo service magma@* stop')
         _build_magma(c_gw)
-        c_gw.sudo('service magma@magmad start')
+        c_gw.run('sudo service magma@magmad start')
 
 
 @task
@@ -714,7 +714,7 @@ def start_magma(c, destroy_vm=False, provision_vm=False):
         c, 'magma', destroy_vm=destroy_vm, force_provision=provision_vm,
     )
     with c_gw:
-        c_gw.sudo('service magma@magmad start')
+        c_gw.run('sudo service magma@magmad start')
 
 
 @task
@@ -775,7 +775,7 @@ def _start_trfserver(c_trf):
     c_trf.run('sudo ethtool --offload eth1 rx off tx off')
     c_trf.run('sudo ethtool --offload eth2 rx off tx off')
     trf_cmd = 'nohup /usr/local/bin/traffic_server.py 192.168.60.144 62462 > trfserver.log 2>&1'
-    c_trf.sudo('apt-get install -y dtach')
+    c_trf.run('sudo apt-get install -y dtach')
     c_trf.sudo(f"dtach -n `mktemp -u /tmp/dtach.XXXX` {trf_cmd}")
 
 
