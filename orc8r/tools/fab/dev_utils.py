@@ -357,7 +357,7 @@ def cloud_get(
 def cloud_post(
         resource: str,
         data: Any,
-        params: Dict[str, str] = None,
+        params: Optional[Dict[str, str]] = None,
         url: Optional[str] = None,
         admin_cert: Optional[types.ClientCert] = None,
 ):
