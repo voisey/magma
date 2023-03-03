@@ -101,8 +101,6 @@ jobs:
     if: ${{ needs.path_filter.outputs.should_not_skip == 'true' }}
     name: nms-eslint job
     runs-on: ubuntu-20.04
-    env:
-      MAGMA_ROOT: "${{ github.workspace }}"
     defaults:
       run:
         working-directory: "${{ github.workspace }}/nms"
@@ -133,8 +131,6 @@ jobs:
     if: ${{ needs.path_filter.outputs.should_not_skip == 'true' }}
     name: nms-yarn-test job
     runs-on: ubuntu-20.04
-    env:
-      MAGMA_ROOT: "${{ github.workspace }}"
     defaults:
       run:
         working-directory: "${{ github.workspace }}/nms"
@@ -168,7 +164,6 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       MAGMA_ROOT: "${{ github.workspace }}"
-      NMS_ROOT: "${{ github.workspace }}/nms"
       PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
       PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome-stable"
     defaults:
