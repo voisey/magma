@@ -58,8 +58,18 @@ jobs:
         with:
           name: pr
           path: pr/
+
+  installation:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 # pin@v3.5.1
+        with:
+          node-version: 16
+      - name: install yarn
+        run: npm install --global yarn
+
   nms-typescript:
-    needs: path_filter
+    needs: [path_filter, installation]
     if: ${{ needs.path_filter.outputs.should_not_skip == 'true' }}
     name: nms-typescript job
     runs-on: ubuntu-20.04
@@ -68,11 +78,6 @@ jobs:
         working-directory: "${{ github.workspace }}/nms"
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # pin@v3.1.0
-      - uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 # pin@v3.5.1
-        with:
-          node-version: 16
-      - name: install yarn
-        run: npm install --global yarn
       - name: yarn install
         run: yarn install
       - name: yarn tsc
@@ -90,33 +95,24 @@ jobs:
           SLACK_ICON_EMOJI: ":boom:"
           SLACK_COLOR: "#FF0000"
           SLACK_FOOTER: ' '
+
   nms-eslint:
-    needs: path_filter
+    needs: [path_filter, installation]
     if: ${{ needs.path_filter.outputs.should_not_skip == 'true' }}
     name: nms-eslint job
     runs-on: ubuntu-20.04
     env:
       MAGMA_ROOT: "${{ github.workspace }}"
+    defaults:
+      run:
+        working-directory: "${{ github.workspace }}/nms"
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # pin@v3.1.0
-      - uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 # pin@v3.5.1
-        with:
-          node-version: 16
-      - name: apt install yarn
-        run: |
-          cd ${MAGMA_ROOT}/nms
-          sudo apt-get install -y apt-transport-https
-          curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-          echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-          sudo apt-get update -y
-          sudo apt-get install -y yarn
       - name: Install dependencies
         run: |
-          cd ${MAGMA_ROOT}/nms
           yarn install --frozen-lockfile
       - name: run eslint
         run: |
-          cd ${MAGMA_ROOT}/nms
           yarn run eslint ./
       # Notify ci channel when failing
       # Plugin info: https://github.com/marketplace/actions/slack-notify
@@ -131,13 +127,17 @@ jobs:
           SLACK_ICON_EMOJI: ":boom:"
           SLACK_COLOR: "#FF0000"
           SLACK_FOOTER: ' '
+
   nms-yarn-test:
-    needs: path_filter
+    needs: [path_filter, installation]
     if: ${{ needs.path_filter.outputs.should_not_skip == 'true' }}
     name: nms-yarn-test job
     runs-on: ubuntu-20.04
     env:
       MAGMA_ROOT: "${{ github.workspace }}"
+    defaults:
+      run:
+        working-directory: "${{ github.workspace }}/nms"
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # pin@v3.1.0
       - uses: borales/actions-yarn@d8ce577a6f5d99a459fc7fdf2a86844617e353e4 # pin@v3.0.0
@@ -145,7 +145,6 @@ jobs:
           cmd: install # will run `yarn install` command
       - name: run yarn test
         run: |
-          cd ${MAGMA_ROOT}/nms
           yarn add jest@^26.4.2 -W --dev
           yarn test:ci
       # Notify ci channel when failing
@@ -161,29 +160,27 @@ jobs:
           SLACK_ICON_EMOJI: ":boom:"
           SLACK_COLOR: "#FF0000"
           SLACK_FOOTER: ' '
+
   nms-e2e-test:
-    needs: path_filter
+    needs: [path_filter, installation]
     if: ${{ needs.path_filter.outputs.should_not_skip == 'true' }}
     name: nms-e2e-test job
     runs-on: ubuntu-20.04
     env:
       MAGMA_ROOT: "${{ github.workspace }}"
+      NMS_ROOT: "${{ github.workspace }}/nms"
       PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
       PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome-stable"
+    defaults:
+      run:
+        working-directory: "${{ github.workspace }}/nms"
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # pin@v3.1.0
-      - name: apt install yarn
+      - name: install jest
         run: |
-          cd ${MAGMA_ROOT}/nms
-          sudo apt-get install -y apt-transport-https
-          curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-          echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-          sudo apt-get update -y
-          sudo apt-get install -y yarn
           yarn add jest@^26.4.2 -W --dev
       - name: apt install chrome
         run: |
-          cd ${MAGMA_ROOT}/nms
           # Install latest chrome dev package
           # Note: this installs the necessary libs to make the bundled version of Chromium that Puppeteer
           # installs, work.
